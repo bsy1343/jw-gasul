@@ -15,4 +15,7 @@ public interface RosterRepository extends JpaRepository<Roster, Long> {
 
     // 현장 참조 명부 수(현장 삭제 차단 판단, F-05)
     long countBySiteId(Long siteId);
+
+    // 최근 생성 명부 5건(대시보드, F-11)
+    List<Roster> findTop5ByOrderByCreatedAtDesc();
 }

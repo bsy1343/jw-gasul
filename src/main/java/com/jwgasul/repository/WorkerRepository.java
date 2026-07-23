@@ -6,7 +6,9 @@ package com.jwgasul.repository;
 import com.jwgasul.domain.Worker;
 import com.jwgasul.domain.WorkerType;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -37,4 +39,21 @@ public interface WorkerRepository extends JpaRepository<Worker, Long>, JpaSpecif
 
     @Query("select count(w) from Worker w where w.deletedAt is null and w.eduExpireDate between :today and :limit")
     long countEduImminent(@Param("today") LocalDate today, @Param("limit") LocalDate limit);
+
+    // --- 대시보드(F-11) ---
+    // 서류 미비(3종 미만) 인원 수
+    @Query("select count(w) from Worker w where w.deletedAt is null "
+            + "and (select count(d) from WorkerDocument d where d.workerId = w.id) < 3")
+    long countMissingDoc();
+
+    // 계좌 미등록 인원 수
+    @Query("select count(w) from Worker w where w.deletedAt is null "
+            + "and (select count(a) from WorkerAccount a where a.workerId = w.id) = 0")
+    long countNoAccount();
+
+    // 비자/교육이 만료·임박(<= limit)인 주의 인원(빠른 만료순). limit=today+7.
+    @Query("select w from Worker w where w.deletedAt is null "
+            + "and (w.visaExpireDate <= :limit or (w.eduExpireDate is not null and w.eduExpireDate <= :limit)) "
+            + "order by w.visaExpireDate asc")
+    List<Worker> findAttentionNeeded(@Param("limit") LocalDate limit, Pageable pageable);
 }

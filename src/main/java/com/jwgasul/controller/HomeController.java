@@ -1,6 +1,7 @@
-// HomeController.java — 인증 후 대시보드 진입점(GET /). 상세 대시보드는 Stage 8에서 구현(F-11).
+// HomeController.java — 대시보드(GET /, F-11). 요약 카드·주의 인원·최근 명부.
 package com.jwgasul.controller;
 
+import com.jwgasul.service.DashboardService;
 import java.security.Principal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -9,10 +10,17 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Controller
 public class HomeController {
 
-    // 대시보드 자리표시자 화면. 로그인 사용자명을 표시한다.
+    private final DashboardService dashboardService;
+
+    public HomeController(DashboardService dashboardService) {
+        this.dashboardService = dashboardService;
+    }
+
+    // 대시보드 화면. 로그인 사용자명 + 집계 데이터.
     @GetMapping("/")
     public String home(Principal principal, Model model) {
         model.addAttribute("username", principal != null ? principal.getName() : "");
+        model.addAttribute("dashboard", dashboardService.load());
         return "home";
     }
 }

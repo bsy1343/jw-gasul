@@ -17,6 +17,9 @@
         <span th:if="${worker.workerType.name() == 'FOREIGN'}" class="text-xs align-middle px-2 py-0.5 rounded bg-blue-50 text-blue-600">외국인</span>
         <span th:if="${worker.workerType.name() == 'KOREAN'}" class="text-xs align-middle px-2 py-0.5 rounded bg-green-50 text-green-600">한국인</span>
     </h1>
+    <a th:href="|https://partner.ocise.co.kr:13860/workeredu/ent/${eduEntCode}/${worker.phone}/${worker.eduLinkBirth}|"
+       target="_blank" rel="noopener"
+       class="mt-2 inline-block rounded-md bg-indigo-50 text-indigo-600 text-sm px-3 py-2 hover:bg-indigo-100">교육 듣기 ↗</a>
 
     <!-- 정보 수정 폼 -->
     <form th:action="@{/workers/{id}(id=${worker.id})}" th:object="${workerForm}" method="post"

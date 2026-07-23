@@ -17,4 +17,7 @@ public interface SiteRepository extends JpaRepository<Site, Long> {
     boolean existsByName(String name);
 
     boolean existsByNameAndIdNot(String name, Long id);
+
+    // 진행 중 현장 수(대시보드, F-11)
+    long countByActiveTrue();
 }

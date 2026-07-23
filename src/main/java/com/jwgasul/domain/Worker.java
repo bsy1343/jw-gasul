@@ -11,6 +11,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -101,6 +102,11 @@ public class Worker {
     // 교육 잔여일(D-day). 만료일이 없으면 null.
     public Long getEduDday() {
         return eduExpireDate != null ? ChronoUnit.DAYS.between(LocalDate.now(), eduExpireDate) : null;
+    }
+
+    // 교육 듣기 링크용 생년월일(yyyyMMdd)(F-10)
+    public String getEduLinkBirth() {
+        return birthDate == null ? "" : birthDate.format(DateTimeFormatter.BASIC_ISO_DATE);
     }
 
     // soft delete 처리
