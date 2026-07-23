@@ -39,9 +39,11 @@ dependencies {
 	implementation("io.zonky.test:embedded-postgres:2.2.2") {
 		exclude(group = "io.zonky.test.postgres") // 바이너리 버전은 아래에서 명시 관리
 	}
-	// PG17 바이너리(Apple Silicon, darwin arm64). 타 플랫폼 CI 추가 시 해당 바이너리 의존성 추가.
+	// PG17 바이너리. 로컬 개발(macOS arm64) + Docker CI(리눅스 arm64, OrbStack) 양쪽을 지원한다.
+	// Zonky가 실행 OS/아키텍처에 맞는 바이너리를 런타임에 자동 선택한다.
 	runtimeOnly(platform("io.zonky.test.postgres:embedded-postgres-binaries-bom:17.6.0"))
 	runtimeOnly("io.zonky.test.postgres:embedded-postgres-binaries-darwin-arm64v8")
+	runtimeOnly("io.zonky.test.postgres:embedded-postgres-binaries-linux-arm64v8")
 
 	testImplementation("org.springframework.boot:spring-boot-starter-data-jpa-test")
 	testImplementation("org.springframework.boot:spring-boot-starter-flyway-test")
