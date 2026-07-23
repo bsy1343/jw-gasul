@@ -21,7 +21,7 @@ env:
 jobs:
   build-and-test:
     runs-on: self-hosted
-    timeout-minutes: 20            # 잡 전체 상한 — 행 걸려도 러너 무한 점유 방지
+    timeout-minutes: 25            # 잡 전체 상한 — 행 걸려도 러너 무한 점유 방지
     steps:
       - uses: actions/checkout@v4
 
@@ -29,7 +29,7 @@ jobs:
         run: mkdir -p "$DOCKER_CONFIG" && echo '{}' > "$DOCKER_CONFIG/config.json"
 
       - name: Build and Test
-        timeout-minutes: 15        # docker build 단계 상한 — 행 시 이 스텝만 자동 취소
+        timeout-minutes: 18        # docker build 단계 상한 — 행 시 이 스텝만 자동 취소
         run: docker build --target ci .
 
       - name: Prune dangling images

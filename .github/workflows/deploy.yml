@@ -20,7 +20,7 @@ env:
 jobs:
   deploy:
     runs-on: self-hosted
-    timeout-minutes: 20
+    timeout-minutes: 25
     # CI가 성공했을 때만(수동 실행은 항상 허용)
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     steps:
@@ -30,7 +30,7 @@ jobs:
         run: mkdir -p "$DOCKER_CONFIG" && echo '{}' > "$DOCKER_CONFIG/config.json"
 
       - name: Build image
-        timeout-minutes: 15
+        timeout-minutes: 18
         run: docker build -t jw-gasul .
 
       - name: Stop old container
