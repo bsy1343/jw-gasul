@@ -63,12 +63,53 @@ public class SampleDataInitializer implements CommandLineRunner {
         workerService.addAccount(w1.getId(), account("신한", "110234567890", "Nguyen Van Nam", "가족 명의"));
         workerService.addAccount(w5.getId(), account("농협", "3021234567890", "김철수", null));
 
+        // 페이징/데모용 대량 샘플(위 6명 + 44명 = 총 50명)
+        generateBulk(44, today);
+
         // 샘플 현장(진행 중 2 + 종료 1)
         siteService.create(site("OO공장 3라인 증설", "OO건설", "경기 화성시", today.minusMonths(1), today.plusMonths(2), true));
         siteService.create(site("△△물류센터 신축", "△△디벨롭먼트", "충북 청주시", today.minusDays(10), null, true));
         siteService.create(site("□□아파트 리모델링", "□□종합건설", "서울 강서구", today.minusMonths(6), today.minusMonths(1), false));
 
         log.info("샘플 근로자 {}명, 현장 3곳 생성", workerRepository.count());
+    }
+
+    // 페이징/필터 데모용 대량 근로자 생성(유형·비자/교육 상태·고정 다양)
+    private void generateBulk(int n, LocalDate today) {
+        String[] sur = {"김", "이", "박", "최", "정", "강", "조", "윤", "장", "임", "한", "오", "서", "신", "권"};
+        String[] given = {"민준", "서연", "도윤", "하준", "지호", "수빈", "예준", "지민", "현우", "유진", "성민", "지우", "준서", "시우", "은지"};
+        String[] fnames = {"Nguyen Van", "Tran Thi", "Le Hoang", "Pham Minh", "Somchai", "Prasert", "Chen Wei",
+                "Wang Lei", "Bahadur", "Rahman", "Karim", "Aung Ko", "Thura", "Batbayar", "Rizal"};
+        String[] nats = {"베트남", "태국", "중국", "네팔", "캄보디아", "미얀마", "방글라데시", "필리핀", "스리랑카", "우즈베키스탄"};
+        String[] visas = {"E-9", "H-2", "F-4", "E-7", "D-2"};
+
+        for (int i = 1; i <= n; i++) {
+            WorkerForm f = new WorkerForm();
+            f.setNameKo(sur[i % sur.length] + given[(i * 3) % given.length]);
+            f.setBirthDate(LocalDate.of(1972 + (i % 28), (i % 12) + 1, (i % 27) + 1));
+            f.setPhone("010" + String.format("%08d", 20000000 + i));
+            f.setFixed(i % 11 == 0);
+            f.setEduCompleteDate(switch (i % 3) {
+                case 0 -> today.minusMonths(3);                 // 정상
+                case 1 -> today.minusYears(2).minusMonths(2);   // 만료
+                default -> null;                                 // 미등록
+            });
+            if (i % 6 == 0) {
+                f.setWorkerType(WorkerType.KOREAN);
+            } else {
+                f.setWorkerType(WorkerType.FOREIGN);
+                f.setNameForeign(fnames[i % fnames.length] + " " + (char) ('A' + (i % 26)));
+                f.setNationality(nats[i % nats.length]);
+                f.setVisaGrade(visas[i % visas.length]);
+                f.setVisaExpireDate(switch (i % 4) {
+                    case 0 -> today.minusDays(15 + (i % 30));    // 만료
+                    case 1 -> today.plusDays(1 + (i % 7));       // 임박
+                    case 2 -> today.plusMonths(3 + (i % 12));    // 정상
+                    default -> null;                              // 미상(9999)
+                });
+            }
+            workerService.create(f);
+        }
     }
 
     // 현장 샘플 폼 구성

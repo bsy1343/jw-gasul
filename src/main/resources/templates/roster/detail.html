@@ -11,17 +11,22 @@
         <a th:href="@{/roster}" class="hover:text-slate-800">명부</a><span>/</span>
         <span class="text-slate-800" th:text="${roster.title}">현장/제목</span>
     </div>
-    <div class="mt-2 flex items-start justify-between gap-3">
-        <div>
-            <h1 class="text-2xl font-semibold text-slate-800" th:text="${roster.title}">현장/제목</h1>
-            <p class="mt-1 text-sm text-slate-500">
-                <span th:text="${roster.targetDate}">날짜</span>
-                · <span th:text="${roster.type.name() == 'RANDOM'} ? '랜덤' : '선택'">유형</span>
-                · <span th:text="${members.size()}">0</span>명
-                <span th:if="${roster.createdBy}" th:text="' · ' + ${roster.createdBy}"></span>
-            </p>
-        </div>
-        <span class="shrink-0 rounded-md bg-slate-100 text-slate-400 text-sm px-3 py-2" title="Stage 7">엑셀(준비중)</span>
+    <h1 class="mt-2 text-2xl font-semibold text-slate-800" th:text="${roster.title}">현장/제목</h1>
+    <p class="mt-1 text-sm text-slate-500">
+        <span th:text="${roster.targetDate}">날짜</span>
+        · <span th:text="${roster.type.name() == 'RANDOM'} ? '랜덤' : '선택'">유형</span>
+        · <span th:text="${members.size()}">0</span>명
+        <span th:if="${roster.createdBy}" th:text="' · ' + ${roster.createdBy}"></span>
+    </p>
+
+    <!-- 엑셀 다운로드(F-08) -->
+    <div class="mt-3 flex flex-wrap gap-2">
+        <a th:href="@{/roster/{id}/excel(id=${roster.id}, mode='A')}"
+           class="rounded-md bg-slate-800 text-white text-sm px-3 py-2 hover:bg-slate-700">엑셀 · 기본</a>
+        <a th:href="@{/roster/{id}/excel(id=${roster.id}, mode='B')}"
+           class="rounded-md bg-slate-200 text-slate-700 text-sm px-3 py-2 hover:bg-slate-300">엑셀 · 사진</a>
+        <a th:href="@{/roster/{id}/excel(id=${roster.id}, mode='C')}"
+           class="rounded-md bg-slate-200 text-slate-700 text-sm px-3 py-2 hover:bg-slate-300">엑셀 · 계좌(송금)</a>
     </div>
 
     <div class="mt-5 bg-white rounded-xl border border-slate-200 overflow-hidden">

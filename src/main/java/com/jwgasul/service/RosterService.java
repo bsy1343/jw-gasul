@@ -2,24 +2,40 @@
 // 후보 풀 필터/제외는 소규모 인원 전제로 인메모리 처리한다.
 package com.jwgasul.service;
 
+import com.jwgasul.domain.DocType;
 import com.jwgasul.domain.ExpiryStatus;
 import com.jwgasul.domain.Roster;
 import com.jwgasul.domain.RosterMember;
 import com.jwgasul.domain.RosterType;
 import com.jwgasul.domain.Site;
 import com.jwgasul.domain.Worker;
+import com.jwgasul.domain.WorkerAccount;
 import com.jwgasul.dto.RandomResult;
 import com.jwgasul.dto.RosterCriteria;
 import com.jwgasul.repository.RosterMemberRepository;
 import com.jwgasul.repository.RosterRepository;
 import com.jwgasul.repository.SiteRepository;
+import com.jwgasul.repository.WorkerAccountRepository;
 import com.jwgasul.repository.WorkerDocumentRepository;
 import com.jwgasul.repository.WorkerRepository;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.ClientAnchor;
+import org.apache.poi.ss.usermodel.CreationHelper;
+import org.apache.poi.ss.usermodel.Drawing;
+import org.apache.poi.ss.usermodel.Font;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
@@ -33,23 +49,32 @@ public class RosterService {
 
     private final WorkerRepository workerRepository;
     private final WorkerDocumentRepository documentRepository;
+    private final WorkerAccountRepository accountRepository;
     private final RosterRepository rosterRepository;
     private final RosterMemberRepository rosterMemberRepository;
     private final SiteRepository siteRepository;
+    private final StorageService storageService;
+    private final AuditService auditService;
     private final int maxMembers;
 
     public RosterService(
             WorkerRepository workerRepository,
             WorkerDocumentRepository documentRepository,
+            WorkerAccountRepository accountRepository,
             RosterRepository rosterRepository,
             RosterMemberRepository rosterMemberRepository,
             SiteRepository siteRepository,
+            StorageService storageService,
+            AuditService auditService,
             @Value("${app.roster.max-members:100}") int maxMembers) {
         this.workerRepository = workerRepository;
         this.documentRepository = documentRepository;
+        this.accountRepository = accountRepository;
         this.rosterRepository = rosterRepository;
         this.rosterMemberRepository = rosterMemberRepository;
         this.siteRepository = siteRepository;
+        this.storageService = storageService;
+        this.auditService = auditService;
         this.maxMembers = maxMembers;
     }
 
@@ -178,5 +203,124 @@ public class RosterService {
     @Transactional(readOnly = true)
     public List<RosterMember> members(Long rosterId) {
         return rosterMemberRepository.findByRosterId(rosterId);
+    }
+
+    // ============================================================
+    // 엑셀 다운로드 (F-08) — A 기본 / B 사진 포함 / C 계좌 포함(송금용)
+    // 인적사항은 스냅샷, 사진·계좌는 조회 시점 현재 worker_id 기준(3.6).
+    // ============================================================
+
+    @Transactional
+    public byte[] exportExcel(Long rosterId, String mode) {
+        Roster roster = get(rosterId);
+        List<RosterMember> members = members(rosterId);
+        boolean photo = "B".equalsIgnoreCase(mode);
+        boolean account = "C".equalsIgnoreCase(mode);
+
+        try (XSSFWorkbook wb = new XSSFWorkbook()) {
+            Sheet sheet = wb.createSheet("명부");
+            CreationHelper helper = wb.getCreationHelper();
+            Drawing<?> drawing = sheet.createDrawingPatriarch();
+
+            CellStyle headStyle = wb.createCellStyle();
+            Font bold = wb.createFont();
+            bold.setBold(true);
+            headStyle.setFont(bold);
+
+            // 헤더
+            List<String> headers = new ArrayList<>(List.of("이름", "연락처", "생년월일"));
+            if (photo) {
+                headers.addAll(List.of("신분증(앞)", "신분증(뒤)", "이수증"));
+            }
+            if (account) {
+                headers.addAll(List.of("은행", "계좌번호", "예금주"));
+            }
+            Row head = sheet.createRow(0);
+            for (int i = 0; i < headers.size(); i++) {
+                Cell c = head.createCell(i);
+                c.setCellValue(headers.get(i));
+                c.setCellStyle(headStyle);
+            }
+            sheet.setColumnWidth(0, 12 * 256);
+            sheet.setColumnWidth(1, 16 * 256);
+            sheet.setColumnWidth(2, 14 * 256);
+            int photoBase = 3;
+            if (photo) {
+                for (int c = 0; c < 3; c++) {
+                    sheet.setColumnWidth(photoBase + c, 18 * 256);
+                }
+            }
+            int accountBase = photo ? photoBase + 3 : 3;
+
+            int r = 1;
+            for (RosterMember m : members) {
+                Row row = sheet.createRow(r);
+                row.createCell(0).setCellValue(m.getSnapNameKo());
+                row.createCell(1).setCellValue(m.getSnapPhone());
+                row.createCell(2).setCellValue(m.getSnapBirthDate().toString());
+
+                if (photo) {
+                    row.setHeightInPoints(90);
+                    DocType[] slots = {DocType.ID_FRONT, DocType.ID_BACK, DocType.EDU_CERT};
+                    for (int s = 0; s < slots.length; s++) {
+                        insertPhoto(wb, drawing, helper, m.getWorkerId(), slots[s], r, photoBase + s);
+                    }
+                }
+                if (account) {
+                    fillAccount(row, m.getWorkerId(), accountBase);
+                }
+                r++;
+            }
+
+            // 계좌 포함 반출은 감사 로그(F-12 필수)
+            if (account) {
+                auditService.log("ROSTER", rosterId, "VIEW", "excel_export_account", null, roster.getTitle());
+            }
+
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            wb.write(bos);
+            return bos.toByteArray();
+        } catch (IOException e) {
+            throw new UncheckedIOException("엑셀 생성 실패", e);
+        }
+    }
+
+    // 셀에 서류 썸네일 삽입. worker_id 없음(삭제/재입사) 또는 서류 없음 → 공란.
+    private void insertPhoto(XSSFWorkbook wb, Drawing<?> drawing, CreationHelper helper,
+                             Long workerId, DocType docType, int row, int col) {
+        if (workerId == null) {
+            return;
+        }
+        var doc = documentRepository.findByWorkerIdAndDocType(workerId, docType);
+        if (doc.isEmpty()) {
+            return;
+        }
+        byte[] thumb = storageService.thumbnailJpeg(doc.get().getFilePath(), 300);
+        if (thumb == null) {
+            return;
+        }
+        int picIdx = wb.addPicture(thumb, Workbook.PICTURE_TYPE_JPEG);
+        ClientAnchor anchor = helper.createClientAnchor();
+        anchor.setCol1(col);
+        anchor.setRow1(row);
+        anchor.setCol2(col + 1);
+        anchor.setRow2(row + 1);
+        anchor.setAnchorType(ClientAnchor.AnchorType.MOVE_AND_RESIZE);
+        drawing.createPicture(anchor, picIdx);
+    }
+
+    // 주계좌(없으면 표시순서 1번) 전체 계좌번호를 채운다. 특정 불가 시 공란.
+    private void fillAccount(Row row, Long workerId, int base) {
+        if (workerId == null) {
+            return;
+        }
+        WorkerAccount acc = accountRepository.findByWorkerIdAndPrimaryTrue(workerId).orElseGet(() ->
+                accountRepository.findByWorkerIdOrderByPrimaryDescSortOrderAsc(workerId).stream().findFirst().orElse(null));
+        if (acc == null) {
+            return;
+        }
+        row.createCell(base).setCellValue(acc.getBankName());
+        row.createCell(base + 1).setCellValue(acc.getAccountNumber()); // 송금용 전체 번호
+        row.createCell(base + 2).setCellValue(acc.getAccountHolder());
     }
 }

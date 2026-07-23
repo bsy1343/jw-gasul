@@ -10,13 +10,19 @@ import com.jwgasul.service.RosterService;
 import com.jwgasul.service.SiteService;
 import com.jwgasul.service.WorkerService;
 import jakarta.validation.Valid;
+import java.nio.charset.StandardCharsets;
 import java.security.Principal;
+import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -55,6 +61,22 @@ public class RosterController {
         model.addAttribute("roster", rosterService.get(id));
         model.addAttribute("members", rosterService.members(id));
         return "roster/detail";
+    }
+
+    // 엑셀 다운로드(F-08): mode A 기본 / B 사진 / C 계좌. 파일명 명부_{현장}_{yyyyMMdd}.xlsx
+    @GetMapping("/roster/{id}/excel")
+    public ResponseEntity<byte[]> excel(@PathVariable Long id,
+                                        @RequestParam(name = "mode", defaultValue = "A") String mode) {
+        Roster roster = rosterService.get(id);
+        byte[] bytes = rosterService.exportExcel(id, mode);
+        String date = roster.getTargetDate().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String safeTitle = roster.getTitle().replaceAll("[\\\\/:*?\"<>|]", "_");
+        String filename = "명부_" + safeTitle + "_" + date + ".xlsx";
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.attachment().filename(filename, StandardCharsets.UTF_8).build().toString())
+                .body(bytes);
     }
 
     // ===== 랜덤 명부(F-06) =====

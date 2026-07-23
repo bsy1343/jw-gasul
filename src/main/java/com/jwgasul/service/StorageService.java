@@ -2,12 +2,17 @@
 // 경로 규칙: {root}/{workerId}/{slot}_{uuid}.{ext} (3.2). 외부 시스템이 아니라 인터페이스 없이 단일 클래스.
 package com.jwgasul.service;
 
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.UUID;
+import javax.imageio.ImageIO;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -88,4 +93,36 @@ public class StorageService {
         String ext = StringUtils.getFilenameExtension(originalName);
         return ext == null ? "" : ext.toLowerCase();
     }
+
+    // 저장 이미지의 축소 썸네일(JPEG, 장변 maxEdge). 엑셀 삽입 메모리 보호(F-08).
+    // 파일이 없거나 이미지가 아니면 null.
+    public byte[] thumbnailJpeg(String relativePath, int maxEdge) {
+        if (!StringUtils.hasText(relativePath)) {
+            return null;
+        }
+        Path resolved = root.resolve(relativePath).normalize();
+        if (!resolved.startsWith(root) || !Files.exists(resolved)) {
+            return null;
+        }
+        try {
+            BufferedImage src = ImageIO.read(resolved.toFile());
+            if (src == null) {
+                return null;
+            }
+            double scale = Math.min(1.0, (double) maxEdge / Math.max(src.getWidth(), src.getHeight()));
+            int w = Math.max(1, (int) Math.round(src.getWidth() * scale));
+            int h = Math.max(1, (int) Math.round(src.getHeight() * scale));
+            BufferedImage dst = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
+            Graphics2D g = dst.createGraphics();
+            g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            g.drawImage(src, 0, 0, w, h, null);
+            g.dispose();
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            ImageIO.write(dst, "jpg", bos);
+            return bos.toByteArray();
+        } catch (IOException e) {
+            return null;
+        }
+    }
 }
+
