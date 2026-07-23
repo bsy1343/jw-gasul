@@ -1,0 +1,7 @@
+/* app.css — Tailwind 4 정식 빌드 진입점(standalone CLI로 컴파일).
+   템플릿/JS에서 실제로 쓰인 유틸리티만 스캔하여 static/css/app.css로 출력한다.
+   @source 경로는 이 파일 위치(src/main/css) 기준 상대경로. */
+@import "tailwindcss";
+
+@source "../resources/templates/**/*.html";
+@source "../resources/static/js/**/*.js";

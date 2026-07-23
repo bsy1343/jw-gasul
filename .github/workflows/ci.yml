@@ -1,4 +1,4 @@
-# CI — 모든 브랜치 push 시 Docker 내부에서 빌드 + 테스트
+# CI — push/PR 시 Docker 안에서 빌드 + 테스트
 name: CI
 
 on:
@@ -6,6 +6,12 @@ on:
     branches: ['**']
   pull_request:
     branches: [main]
+  workflow_dispatch: {}   # 수동 실행(러너/CI 헬스 테스트용)
+
+# 같은 ref의 이전 실행은 취소 → 단일 self-hosted 러너 적체(pile-up) 방지
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   DOCKER_HOST: unix:///var/run/docker.sock
@@ -15,6 +21,7 @@ env:
 jobs:
   build-and-test:
     runs-on: self-hosted
+    timeout-minutes: 20            # 잡 전체 상한 — 행 걸려도 러너 무한 점유 방지
     steps:
       - uses: actions/checkout@v4
 
@@ -22,7 +29,9 @@ jobs:
         run: mkdir -p "$DOCKER_CONFIG" && echo '{}' > "$DOCKER_CONFIG/config.json"
 
       - name: Build and Test
-        run: docker build --target ci .
+        timeout-minutes: 15        # docker build 단계 상한 — 행 시 이 스텝만 자동 취소
+        run: docker build --target ci --progress=plain .
 
       - name: Prune dangling images
+        if: always()
         run: docker image prune -f

@@ -1,4 +1,6 @@
 // build.gradle.kts — 빌드 스크립트: Spring Boot 4.1 / JDK 21 / 의존성 및 테스트 설정
+import java.net.URI
+
 plugins {
 	java
 	id("org.springframework.boot") version "4.1.0"
@@ -63,4 +65,74 @@ tasks.withType<Test> {
 // 실행 가능한 bootJar만 생성한다(플레인 -plain.jar 비활성). Docker 런타임 COPY 대상을 명확히 한다.
 tasks.named<Jar>("jar") {
 	enabled = false
+}
+
+// ──────────────────────────────────────────────────────────────
+// Tailwind CSS 4 정식 빌드 (standalone CLI 바이너리 — Node/npm 불필요)
+//   app.css를 스캔·컴파일하여 build/generated-resources/static/css/app.css로 출력.
+//   processResources가 이 산출물을 리소스로 포함 → jar 안 /static/css/app.css.
+//   Docker: TAILWIND_BIN 환경변수로 미리 받아둔 바이너리 경로를 주면 다운로드를 건너뛴다.
+// ──────────────────────────────────────────────────────────────
+val tailwindVersion = "4.3.3"
+val tailwindBinDir = layout.buildDirectory.dir("tailwind")
+val tailwindGenDir = layout.buildDirectory.dir("generated-resources")
+val tailwindBinEnv = System.getenv("TAILWIND_BIN")
+
+// 실행 OS/아키텍처에 맞는 릴리스 에셋명(glibc 리눅스 = -musl 아님)
+fun tailwindAsset(): String {
+	val os = System.getProperty("os.name").lowercase()
+	val arch = System.getProperty("os.arch").lowercase()
+	val isArm = arch.contains("aarch64") || arch.contains("arm")
+	return when {
+		os.contains("mac") && isArm -> "tailwindcss-macos-arm64"
+		os.contains("mac") -> "tailwindcss-macos-x64"
+		os.contains("linux") && isArm -> "tailwindcss-linux-arm64"
+		os.contains("linux") -> "tailwindcss-linux-x64"
+		else -> throw GradleException("지원하지 않는 OS/arch: $os/$arch")
+	}
+}
+
+val tailwindBinPath: String = tailwindBinEnv ?: tailwindBinDir.get().file("tailwindcss").asFile.absolutePath
+
+// 바이너리 다운로드(캐시: 파일 있으면 스킵, TAILWIND_BIN 지정 시 아예 스킵)
+val downloadTailwind by tasks.registering {
+	onlyIf { tailwindBinEnv == null }
+	val binFile = tailwindBinDir.get().file("tailwindcss").asFile
+	outputs.file(binFile)
+	doLast {
+		if (!binFile.exists()) {
+			binFile.parentFile.mkdirs()
+			val url = "https://github.com/tailwindlabs/tailwindcss/releases/download/v$tailwindVersion/${tailwindAsset()}"
+			logger.lifecycle("Tailwind CLI 다운로드: $url")
+			URI(url).toURL().openStream().use { input ->
+				binFile.outputStream().use { output -> input.copyTo(output) }
+			}
+			binFile.setExecutable(true)
+		}
+	}
+}
+
+// app.css → static/css/app.css 컴파일(--minify)
+val tailwindBuild by tasks.registering(Exec::class) {
+	group = "build"
+	description = "Tailwind CSS를 컴파일해 정식 static/css/app.css를 생성"
+	dependsOn(downloadTailwind)
+	val inputCss = layout.projectDirectory.file("src/main/css/app.css")
+	val outputCss = tailwindGenDir.get().file("static/css/app.css")
+	inputs.file(inputCss)
+	inputs.dir(layout.projectDirectory.dir("src/main/resources/templates"))
+	inputs.dir(layout.projectDirectory.dir("src/main/resources/static/js"))
+	outputs.file(outputCss)
+	doFirst { outputCss.asFile.parentFile.mkdirs() }
+	executable = tailwindBinPath
+	args("-i", inputCss.asFile.absolutePath, "-o", outputCss.asFile.absolutePath, "--minify")
+}
+
+// 생성된 CSS를 메인 리소스로 포함 → jar/실행 클래스패스의 /static/css/app.css
+sourceSets.named("main") {
+	resources.srcDir(tailwindGenDir)
+}
+
+tasks.named("processResources") {
+	dependsOn(tailwindBuild)
 }

@@ -1,9 +1,16 @@
-# Deploy — main 브랜치 push 시 맥미니에 컨테이너 배포
+# Deploy — CI 성공 후에만 맥미니에 컨테이너 배포(단일 러너 이중 빌드 경합·실패코드 배포 방지)
 name: Deploy
 
 on:
-  push:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
     branches: [main]
+  workflow_dispatch: {}   # 수동 배포
+
+concurrency:
+  group: deploy-main
+  cancel-in-progress: true
 
 env:
   DOCKER_HOST: unix:///var/run/docker.sock
@@ -13,11 +20,18 @@ env:
 jobs:
   deploy:
     runs-on: self-hosted
+    timeout-minutes: 20
+    # CI가 성공했을 때만(수동 실행은 항상 허용)
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     steps:
       - uses: actions/checkout@v4
 
+      - name: Disable Docker keychain
+        run: mkdir -p "$DOCKER_CONFIG" && echo '{}' > "$DOCKER_CONFIG/config.json"
+
       - name: Build image
-        run: docker build -t jw-gasul .
+        timeout-minutes: 15
+        run: docker build -t jw-gasul --progress=plain .
 
       - name: Stop old container
         run: docker rm -f jw-gasul || true
@@ -26,4 +40,5 @@ jobs:
         run: docker-compose -f /Users/bsy1343/dev/home-server/docker-compose.yml up -d jw-gasul
 
       - name: Prune dangling images
+        if: always()
         run: docker image prune -f

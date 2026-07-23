@@ -1,12 +1,12 @@
-<!-- layout.html — 공통 head/네비/플래시 프래그먼트. Tailwind v4 브라우저 CDN 사용(정식 빌드는 이후 단계) -->
+<!-- layout.html — 공통 head/네비/플래시 프래그먼트. Tailwind 4 정식 빌드(standalone CLI) CSS 사용. -->
 <!DOCTYPE html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <head th:fragment="head(title)">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title th:text="${title}">재원가설 인원관리</title>
-    <!-- TODO: 프론트엔드 빌드 단계에서 Tailwind 4 + DaisyUI 5 정식 빌드로 교체 -->
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- 빌드 시 컴파일된 CSS(build.gradle.kts tailwindBuild). 운영에서 외부 CDN 의존 없음. -->
+    <link rel="stylesheet" th:href="@{/css/app.css}">
 </head>
 <body>
 <!-- 상단 네비게이션 프래그먼트(인증 후 화면 공용). mobile-first: 상단행(로고+로그아웃) + 메뉴행(가로 스크롤) -->

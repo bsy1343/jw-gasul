@@ -1,52 +1,146 @@
-<!-- home.html — 대시보드(F-11): 요약 카드 + 주의 인원 + 최근 명부. mobile-first. -->
+<!-- home.html — 대시보드(F-11): 도넛·비율막대 시각화 + 조치 필요 + 리스트. mobile-first(시인성 우선). -->
 <!DOCTYPE html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/layout :: head('대시보드 · 재원가설 인원관리')}"></head>
 <body class="min-h-screen bg-slate-100">
 <nav th:replace="~{fragments/layout :: nav('home')}"></nav>
 
-<main class="max-w-6xl mx-auto px-3 sm:px-4 py-5 sm:py-8">
+<main class="max-w-6xl mx-auto px-3 sm:px-4 py-5 sm:py-8"
+      th:with="total=${dashboard.totalWorkers},
+               foreign=${dashboard.foreignCount},
+               korean=${dashboard.koreanCount},
+               foreignPct=${dashboard.totalWorkers > 0 ? dashboard.foreignCount * 100.0 / dashboard.totalWorkers : 0},
+               visaExp=${dashboard.expiry.visaExpired}, visaImm=${dashboard.expiry.visaImminent},
+               visaOk=${dashboard.foreignCount - dashboard.expiry.visaExpired - dashboard.expiry.visaImminent},
+               eduExp=${dashboard.expiry.eduExpired}, eduImm=${dashboard.expiry.eduImminent},
+               eduOk=${dashboard.totalWorkers - dashboard.expiry.eduExpired - dashboard.expiry.eduImminent}">
+
     <h1 class="text-xl sm:text-2xl font-semibold text-slate-800">대시보드</h1>
     <p class="mt-1 text-sm text-slate-500"><span class="font-medium" th:text="${username}">사용자</span>님, 환영합니다.</p>
 
-    <!-- 요약 카드 -->
-    <div class="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <a th:href="@{/workers}" class="bg-white rounded-xl border border-slate-200 p-4 active:bg-slate-50">
-            <div class="text-xs text-slate-500">총 인원</div>
-            <div class="mt-1 text-2xl font-semibold text-slate-800" th:text="${dashboard.totalWorkers}">0</div>
-            <div class="mt-0.5 text-xs text-slate-400">외국인 <span th:text="${dashboard.foreignCount}">0</span> · 한국인 <span th:text="${dashboard.koreanCount}">0</span></div>
+    <!-- 상단: 인원 구성 도넛 + 진행 현장 -->
+    <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <!-- 인원 구성 도넛(외국인/한국인) -->
+        <a th:href="@{/workers}"
+           class="sm:col-span-2 bg-white rounded-2xl border border-slate-200 p-5 flex items-center gap-5 active:bg-slate-50">
+            <div class="relative w-28 h-28 shrink-0">
+                <div class="w-full h-full rounded-full"
+                     th:style="'background: conic-gradient(#0d9488 0 ' + ${foreignPct} + '%, #cbd5e1 ' + ${foreignPct} + '% 100%)'"></div>
+                <div class="absolute inset-[13px] bg-white rounded-full flex flex-col items-center justify-center">
+                    <span class="text-3xl font-bold text-slate-800 leading-none" th:text="${total}">0</span>
+                    <span class="text-[11px] text-slate-400 mt-1">총 인원</span>
+                </div>
+            </div>
+            <div class="min-w-0">
+                <div class="text-sm font-semibold text-slate-700">인원 구성</div>
+                <div class="mt-3 space-y-2">
+                    <div class="flex items-center gap-2 text-sm">
+                        <span class="w-3 h-3 rounded-full shrink-0" style="background:#0d9488"></span>
+                        <span class="text-slate-500">외국인</span>
+                        <span class="ml-auto font-semibold text-slate-800" th:text="${foreign}">0</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-sm">
+                        <span class="w-3 h-3 rounded-full shrink-0" style="background:#cbd5e1"></span>
+                        <span class="text-slate-500">한국인</span>
+                        <span class="ml-auto font-semibold text-slate-800" th:text="${korean}">0</span>
+                    </div>
+                </div>
+            </div>
         </a>
-        <a th:href="@{/sites(active=true)}" class="bg-white rounded-xl border border-slate-200 p-4 active:bg-slate-50">
-            <div class="text-xs text-slate-500">진행 중 현장</div>
-            <div class="mt-1 text-2xl font-semibold text-slate-800" th:text="${dashboard.activeSiteCount}">0</div>
+
+        <!-- 진행 중 현장 -->
+        <a th:href="@{/sites(active=true)}"
+           class="bg-white rounded-2xl border border-slate-200 p-5 flex flex-col justify-center active:bg-slate-50">
+            <div class="flex items-center gap-2 text-xs text-slate-500">
+                <span class="inline-block w-2.5 h-2.5 rounded-full bg-green-500"></span>진행 중 현장
+            </div>
+            <div class="mt-2 text-4xl font-bold text-slate-800" th:text="${dashboard.activeSiteCount}">0</div>
+            <div class="mt-1 text-xs text-slate-400">현장 관리 바로가기 ›</div>
         </a>
-        <a th:href="@{/workers(visa='EXPIRED')}" class="bg-white rounded-xl border border-slate-200 p-4 active:bg-slate-50">
-            <div class="text-xs text-slate-500">비자 만료 / 임박</div>
-            <div class="mt-1 text-2xl font-semibold text-red-600" th:text="${dashboard.expiry.visaExpired}">0</div>
-            <div class="mt-0.5 text-xs text-orange-500">임박 <span th:text="${dashboard.expiry.visaImminent}">0</span></div>
+    </div>
+
+    <!-- 유효기간 현황: 비자·교육 비율 막대 -->
+    <section class="mt-3 bg-white rounded-2xl border border-slate-200 p-5">
+        <h2 class="text-base font-semibold text-slate-800">유효기간 현황</h2>
+
+        <!-- 비자(외국인) -->
+        <div class="mt-4"
+             th:with="ep=${foreign > 0 ? visaExp * 100.0 / foreign : 0},
+                      ip=${foreign > 0 ? visaImm * 100.0 / foreign : 0},
+                      op=${foreign > 0 ? (visaOk < 0 ? 0 : visaOk) * 100.0 / foreign : 0}">
+            <div class="flex items-center justify-between text-sm">
+                <span class="font-medium text-slate-600">비자 <span class="text-slate-400 text-xs">(외국인 <span th:text="${foreign}">0</span>명)</span></span>
+            </div>
+            <div class="mt-2 h-3.5 w-full rounded-full overflow-hidden bg-slate-100 flex">
+                <div class="h-full bg-red-500" th:style="'width:' + ${ep} + '%'"></div>
+                <div class="h-full bg-amber-400" th:style="'width:' + ${ip} + '%'"></div>
+                <div class="h-full bg-emerald-500" th:style="'width:' + ${op} + '%'"></div>
+            </div>
+            <div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs">
+                <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-red-500"></span>만료 <b class="text-slate-700" th:text="${visaExp}">0</b></span>
+                <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-amber-400"></span>임박 <b class="text-slate-700" th:text="${visaImm}">0</b></span>
+                <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-emerald-500"></span>정상 <b class="text-slate-700" th:text="${visaOk < 0 ? 0 : visaOk}">0</b></span>
+            </div>
+        </div>
+
+        <!-- 교육(전체) -->
+        <div class="mt-5"
+             th:with="ep=${total > 0 ? eduExp * 100.0 / total : 0},
+                      ip=${total > 0 ? eduImm * 100.0 / total : 0},
+                      op=${total > 0 ? (eduOk < 0 ? 0 : eduOk) * 100.0 / total : 0}">
+            <div class="flex items-center justify-between text-sm">
+                <span class="font-medium text-slate-600">교육 <span class="text-slate-400 text-xs">(전체 <span th:text="${total}">0</span>명)</span></span>
+            </div>
+            <div class="mt-2 h-3.5 w-full rounded-full overflow-hidden bg-slate-100 flex">
+                <div class="h-full bg-red-500" th:style="'width:' + ${ep} + '%'"></div>
+                <div class="h-full bg-amber-400" th:style="'width:' + ${ip} + '%'"></div>
+                <div class="h-full bg-emerald-500" th:style="'width:' + ${op} + '%'"></div>
+            </div>
+            <div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs">
+                <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-red-500"></span>만료 <b class="text-slate-700" th:text="${eduExp}">0</b></span>
+                <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-amber-400"></span>임박 <b class="text-slate-700" th:text="${eduImm}">0</b></span>
+                <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-emerald-500"></span>정상 <b class="text-slate-700" th:text="${eduOk < 0 ? 0 : eduOk}">0</b></span>
+            </div>
+        </div>
+    </section>
+
+    <!-- 조치 필요: 색으로 위험 강조(모바일 시인성) -->
+    <div class="mt-3 grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <a th:href="@{/workers(visa='EXPIRED')}"
+           class="rounded-2xl border p-4 active:opacity-80"
+           th:classappend="${dashboard.expiry.visaExpired > 0} ? 'bg-red-50 border-red-200' : 'bg-white border-slate-200'">
+            <div class="text-xs" th:classappend="${dashboard.expiry.visaExpired > 0} ? 'text-red-600' : 'text-slate-500'">비자 만료</div>
+            <div class="mt-1 text-2xl font-bold" th:classappend="${dashboard.expiry.visaExpired > 0} ? 'text-red-600' : 'text-slate-800'" th:text="${dashboard.expiry.visaExpired}">0</div>
+            <div class="mt-0.5 text-xs text-amber-600">임박 <span th:text="${dashboard.expiry.visaImminent}">0</span></div>
         </a>
-        <a th:href="@{/workers(edu='EXPIRED')}" class="bg-white rounded-xl border border-slate-200 p-4 active:bg-slate-50">
-            <div class="text-xs text-slate-500">교육 만료 / 임박</div>
-            <div class="mt-1 text-2xl font-semibold text-red-600" th:text="${dashboard.expiry.eduExpired}">0</div>
-            <div class="mt-0.5 text-xs text-orange-500">임박 <span th:text="${dashboard.expiry.eduImminent}">0</span></div>
+        <a th:href="@{/workers(edu='EXPIRED')}"
+           class="rounded-2xl border p-4 active:opacity-80"
+           th:classappend="${dashboard.expiry.eduExpired > 0} ? 'bg-red-50 border-red-200' : 'bg-white border-slate-200'">
+            <div class="text-xs" th:classappend="${dashboard.expiry.eduExpired > 0} ? 'text-red-600' : 'text-slate-500'">교육 만료</div>
+            <div class="mt-1 text-2xl font-bold" th:classappend="${dashboard.expiry.eduExpired > 0} ? 'text-red-600' : 'text-slate-800'" th:text="${dashboard.expiry.eduExpired}">0</div>
+            <div class="mt-0.5 text-xs text-amber-600">임박 <span th:text="${dashboard.expiry.eduImminent}">0</span></div>
         </a>
-        <a th:href="@{/workers(missingDoc=true)}" class="bg-white rounded-xl border border-slate-200 p-4 active:bg-slate-50">
-            <div class="text-xs text-slate-500">서류 미비</div>
-            <div class="mt-1 text-2xl font-semibold text-slate-800" th:text="${dashboard.missingDocCount}">0</div>
+        <a th:href="@{/workers(missingDoc=true)}"
+           class="rounded-2xl border p-4 active:opacity-80"
+           th:classappend="${dashboard.missingDocCount > 0} ? 'bg-amber-50 border-amber-200' : 'bg-white border-slate-200'">
+            <div class="text-xs" th:classappend="${dashboard.missingDocCount > 0} ? 'text-amber-700' : 'text-slate-500'">서류 미비</div>
+            <div class="mt-1 text-2xl font-bold" th:classappend="${dashboard.missingDocCount > 0} ? 'text-amber-700' : 'text-slate-800'" th:text="${dashboard.missingDocCount}">0</div>
         </a>
-        <a th:href="@{/workers(noAccount=true)}" class="bg-white rounded-xl border border-slate-200 p-4 active:bg-slate-50">
-            <div class="text-xs text-slate-500">계좌 미등록</div>
-            <div class="mt-1 text-2xl font-semibold text-slate-800" th:text="${dashboard.noAccountCount}">0</div>
+        <a th:href="@{/workers(noAccount=true)}"
+           class="rounded-2xl border p-4 active:opacity-80"
+           th:classappend="${dashboard.noAccountCount > 0} ? 'bg-sky-50 border-sky-200' : 'bg-white border-slate-200'">
+            <div class="text-xs" th:classappend="${dashboard.noAccountCount > 0} ? 'text-sky-700' : 'text-slate-500'">계좌 미등록</div>
+            <div class="mt-1 text-2xl font-bold" th:classappend="${dashboard.noAccountCount > 0} ? 'text-sky-700' : 'text-slate-800'" th:text="${dashboard.noAccountCount}">0</div>
         </a>
     </div>
 
     <div class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
         <!-- 만료·임박 인원 -->
-        <section class="bg-white rounded-xl border border-slate-200 p-4 sm:p-5">
+        <section class="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5">
             <h2 class="text-base font-semibold text-slate-800">만료·임박 인원</h2>
             <div class="mt-3 space-y-2">
                 <a th:each="w : ${dashboard.attention}" th:href="@{/workers/{id}(id=${w.id})}"
-                   class="flex items-center justify-between gap-2 border border-slate-100 rounded-lg p-2.5 hover:bg-slate-50">
+                   class="flex items-center justify-between gap-2 border border-slate-100 rounded-xl p-2.5 hover:bg-slate-50">
                     <span class="min-w-0">
                         <span class="font-medium text-slate-800" th:text="${w.nameKo}">이름</span>
                         <span class="block text-xs text-slate-500">
@@ -61,14 +155,14 @@
         </section>
 
         <!-- 최근 명부 -->
-        <section class="bg-white rounded-xl border border-slate-200 p-4 sm:p-5">
+        <section class="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5">
             <div class="flex items-center justify-between">
                 <h2 class="text-base font-semibold text-slate-800">최근 명부</h2>
                 <a th:href="@{/roster}" class="text-xs text-slate-500 hover:text-slate-800 underline">전체</a>
             </div>
             <div class="mt-3 space-y-2">
                 <a th:each="r : ${dashboard.recentRosters}" th:href="@{/roster/{id}(id=${r.id})}"
-                   class="flex items-center justify-between gap-2 border border-slate-100 rounded-lg p-2.5 hover:bg-slate-50">
+                   class="flex items-center justify-between gap-2 border border-slate-100 rounded-xl p-2.5 hover:bg-slate-50">
                     <span class="min-w-0">
                         <span class="font-medium text-slate-800 truncate" th:text="${r.title}">현장</span>
                         <span class="block text-xs text-slate-500"><span th:text="${r.targetDate}">날짜</span>
