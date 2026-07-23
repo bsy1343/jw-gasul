@@ -1,9 +1,9 @@
 // DataInitializer.java — 초기 관리자 계정 seed(3.4). 계정이 없을 때만 설정값으로 1건 생성한다.
 // 운영에서는 app.seed.* 를 환경변수로 주입해 비밀번호를 교체한다.
-package com.jwgasul.config;
+package com.jwgasul.common.config;
 
-import com.jwgasul.user.AppUser;
-import com.jwgasul.user.AppUserRepository;
+import com.jwgasul.domain.AppUser;
+import com.jwgasul.repository.AppUserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;

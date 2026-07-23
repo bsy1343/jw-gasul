@@ -1,7 +1,7 @@
 // EmbeddedPostgresConfig.java — test 프로필 전용 임베디드 PostgreSQL DataSource.
 // 외부 PostgreSQL/Docker 없이 실 PG 바이너리를 프로세스로 띄워 애플리케이션을 기동한다(SCAFFOLD: 기본 test 프로필).
 // !test(prod) 프로필에서는 이 구성이 비활성화되고 spring.datasource(환경변수)를 사용한다.
-package com.jwgasul.config;
+package com.jwgasul.common.config;
 
 import io.zonky.test.db.postgres.embedded.EmbeddedPostgres;
 import java.io.IOException;

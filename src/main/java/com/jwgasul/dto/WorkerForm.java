@@ -1,6 +1,7 @@
 // WorkerForm.java — 근로자 등록/수정 폼 바인딩 DTO(F-02). 유형별 표시 규칙은 서비스에서 적용.
-package com.jwgasul.worker;
+package com.jwgasul.dto;
 
+import com.jwgasul.domain.WorkerType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Past;

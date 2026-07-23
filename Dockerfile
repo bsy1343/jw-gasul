@@ -17,7 +17,9 @@ ENV GRADLE_USER_HOME=/home/builder/.gradle
 # 래퍼·빌드 스크립트를 먼저 복사해 다운로드를 레이어 캐시로 재사용
 COPY --chown=builder:builder gradlew settings.gradle.kts build.gradle.kts ./
 COPY --chown=builder:builder gradle ./gradle
-RUN chmod +x gradlew && ./gradlew --no-daemon --version
+# 의존성·Gradle 배포판을 먼저 받아 레이어 캐시로 고정.
+# 빌드 스크립트가 안 바뀌면 이 레이어가 재사용되어, 코드만 바뀔 땐 의존성 재다운로드를 건너뛴다.
+RUN chmod +x gradlew && ./gradlew --no-daemon dependencies -q || true
 COPY --chown=builder:builder src ./src
 RUN ./gradlew --no-daemon clean bootJar -x test
 

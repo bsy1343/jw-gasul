@@ -1,6 +1,7 @@
 // AppUserRepository.java — app_user 조회 리포지토리
-package com.jwgasul.user;
+package com.jwgasul.repository;
 
+import com.jwgasul.domain.AppUser;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 

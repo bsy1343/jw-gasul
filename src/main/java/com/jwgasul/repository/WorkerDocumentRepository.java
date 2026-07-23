@@ -1,6 +1,8 @@
 // WorkerDocumentRepository.java — 근로자 서류 사진 조회 리포지토리(3.2)
-package com.jwgasul.worker;
+package com.jwgasul.repository;
 
+import com.jwgasul.domain.DocType;
+import com.jwgasul.domain.WorkerDocument;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;

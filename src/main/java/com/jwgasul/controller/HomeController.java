@@ -1,5 +1,5 @@
 // HomeController.java — 인증 후 대시보드 진입점(GET /). 상세 대시보드는 Stage 8에서 구현(F-11).
-package com.jwgasul.web;
+package com.jwgasul.controller;
 
 import java.security.Principal;
 import org.springframework.stereotype.Controller;

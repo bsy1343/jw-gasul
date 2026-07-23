@@ -1,6 +1,6 @@
-// LocalFileStorageService.java — 로컬 파일시스템 저장 구현. 저장 루트는 app.upload.dir(웹 루트 외부).
-// 경로 규칙: {root}/{workerId}/{slot}_{uuid}.{ext} (3.2)
-package com.jwgasul.storage;
+// StorageService.java — 업로드 파일 저장(로컬 파일시스템). 저장 루트는 app.upload.dir(웹 루트 외부).
+// 경로 규칙: {root}/{workerId}/{slot}_{uuid}.{ext} (3.2). 외부 시스템이 아니라 인터페이스 없이 단일 클래스.
+package com.jwgasul.service;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -11,23 +11,26 @@ import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
-import org.springframework.http.HttpStatus;
 
 @Service
-public class LocalFileStorageService implements StorageService {
+public class StorageService {
+
+    // 저장 결과 메타데이터(웹 루트 외부의 상대 저장 경로 포함)
+    public record StoredFile(String relativePath, String originalName, long size) {
+    }
 
     private final Path root;
 
-    public LocalFileStorageService(@Value("${app.upload.dir:./data/uploads}") String uploadDir) {
+    public StorageService(@Value("${app.upload.dir:./data/uploads}") String uploadDir) {
         this.root = Paths.get(uploadDir).toAbsolutePath().normalize();
     }
 
     // 파일을 {root}/{workerId}/{slot}_{uuid}.{ext}로 저장한다
-    @Override
     public StoredFile store(Long workerId, String slot, MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "빈 파일은 저장할 수 없습니다");
@@ -48,7 +51,6 @@ public class LocalFileStorageService implements StorageService {
     }
 
     // 상대 경로를 저장 루트 안으로 한정해 로드한다(디렉터리 트래버설 차단)
-    @Override
     public Resource loadAsResource(String relativePath) {
         Path resolved = root.resolve(relativePath).normalize();
         if (!resolved.startsWith(root)) {
@@ -66,7 +68,6 @@ public class LocalFileStorageService implements StorageService {
     }
 
     // 상대 경로 파일을 삭제한다(루트 밖 경로는 무시, 없어도 예외 없음)
-    @Override
     public void delete(String relativePath) {
         if (!StringUtils.hasText(relativePath)) {
             return;

@@ -1,7 +1,7 @@
 // FileController.java — 업로드 이미지 서빙(GET /files/**). 인증된 요청만 스트리밍(6장 보안)
-package com.jwgasul.web;
+package com.jwgasul.controller;
 
-import com.jwgasul.storage.StorageService;
+import com.jwgasul.service.StorageService;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;

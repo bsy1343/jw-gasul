@@ -51,6 +51,8 @@ dependencies {
 	testImplementation("org.springframework.boot:spring-boot-starter-thymeleaf-test")
 	testImplementation("org.springframework.boot:spring-boot-starter-validation-test")
 	testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
+	// ArchUnit — 레이어(Controller→Service→Repository) 의존성 규칙을 CI에서 강제
+	testImplementation("com.tngtech.archunit:archunit-junit5:1.3.0")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

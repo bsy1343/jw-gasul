@@ -1,13 +1,12 @@
 // WorkerController.java — 근로자 목록/등록/상세·수정/삭제 및 서류 업로드 화면(F-02, F-03)
-package com.jwgasul.web;
+package com.jwgasul.controller;
 
-import com.jwgasul.worker.DocType;
-import com.jwgasul.worker.DuplicateWorkerException;
-import com.jwgasul.worker.Worker;
-import com.jwgasul.worker.WorkerDocumentService;
-import com.jwgasul.worker.WorkerForm;
-import com.jwgasul.worker.WorkerService;
-import com.jwgasul.worker.WorkerType;
+import com.jwgasul.common.exception.DuplicateWorkerException;
+import com.jwgasul.domain.DocType;
+import com.jwgasul.domain.Worker;
+import com.jwgasul.domain.WorkerType;
+import com.jwgasul.dto.WorkerForm;
+import com.jwgasul.service.WorkerService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -28,11 +27,9 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class WorkerController {
 
     private final WorkerService workerService;
-    private final WorkerDocumentService documentService;
 
-    public WorkerController(WorkerService workerService, WorkerDocumentService documentService) {
+    public WorkerController(WorkerService workerService) {
         this.workerService = workerService;
-        this.documentService = documentService;
     }
 
     // 목록: 전체/외국인/한국인 탭 + 이름·연락처 검색, 비자만료일 오름차순 기본(F-03)
@@ -90,7 +87,7 @@ public class WorkerController {
         if (!model.containsAttribute("workerForm")) {
             model.addAttribute("workerForm", workerService.toForm(worker));
         }
-        model.addAttribute("documents", documentService.documentsByType(id));
+        model.addAttribute("documents", workerService.documentsByType(id));
         model.addAttribute("docTypes", DocType.values());
         return "workers/detail";
     }
@@ -105,7 +102,7 @@ public class WorkerController {
             RedirectAttributes ra) {
         if (binding.hasErrors()) {
             model.addAttribute("worker", workerService.getActive(id));
-            model.addAttribute("documents", documentService.documentsByType(id));
+            model.addAttribute("documents", workerService.documentsByType(id));
             model.addAttribute("docTypes", DocType.values());
             return "workers/detail";
         }
@@ -129,7 +126,7 @@ public class WorkerController {
             @PathVariable DocType docType,
             @RequestParam("file") MultipartFile file,
             RedirectAttributes ra) {
-        documentService.upload(id, docType, file);
+        workerService.uploadDocument(id, docType, file);
         ra.addFlashAttribute("message", docType.getLabel() + " 업로드 완료");
         return "redirect:/workers/" + id;
     }
@@ -140,7 +137,7 @@ public class WorkerController {
             @PathVariable Long id,
             @PathVariable DocType docType,
             RedirectAttributes ra) {
-        documentService.delete(id, docType);
+        workerService.deleteDocument(id, docType);
         ra.addFlashAttribute("message", docType.getLabel() + " 삭제됨");
         return "redirect:/workers/" + id;
     }

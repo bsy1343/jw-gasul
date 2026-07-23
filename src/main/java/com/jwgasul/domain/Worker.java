@@ -1,5 +1,5 @@
 // Worker.java — 근로자 엔티티(worker 테이블, 3.1). 비자/교육 유효기간·soft delete 포함
-package com.jwgasul.worker;
+package com.jwgasul.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -73,7 +73,8 @@ public class Worker {
     @Column(name = "deleted_at")
     private Instant deletedAt;
 
-    protected Worker() {
+    // 서비스 계층(다른 패키지)에서 생성 후 필드 설정. JPA 기본 생성자 겸용이라 public.
+    public Worker() {
     }
 
     // 비자 만료일 추적 대상인지(9999-12-31이면 해당없음)

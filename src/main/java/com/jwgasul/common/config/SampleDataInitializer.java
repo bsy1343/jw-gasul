@@ -1,11 +1,11 @@
 // SampleDataInitializer.java — test 프로필 전용 stub(샘플) 근로자 데이터 생성.
 // 화면을 비어있지 않게 하여 실 데이터 연동 전 UI/기능을 완성하기 위함. prod에서는 실행되지 않는다.
-package com.jwgasul.config;
+package com.jwgasul.common.config;
 
-import com.jwgasul.worker.WorkerForm;
-import com.jwgasul.worker.WorkerRepository;
-import com.jwgasul.worker.WorkerService;
-import com.jwgasul.worker.WorkerType;
+import com.jwgasul.dto.WorkerForm;
+import com.jwgasul.repository.WorkerRepository;
+import com.jwgasul.service.WorkerService;
+import com.jwgasul.domain.WorkerType;
 import java.time.LocalDate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

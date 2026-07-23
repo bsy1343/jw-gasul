@@ -1,5 +1,5 @@
 // DocType.java — 서류 사진 슬롯 종류(신분증 앞/뒤/이수증). worker_document.doc_type과 매핑(3.2)
-package com.jwgasul.worker;
+package com.jwgasul.domain;
 
 public enum DocType {
     ID_FRONT("신분증 앞"),

@@ -2,8 +2,8 @@
 // app_user 조회 + username 기준 잠금 상태를 UserDetails에 반영한다(F-01).
 package com.jwgasul.security;
 
-import com.jwgasul.user.AppUser;
-import com.jwgasul.user.AppUserRepository;
+import com.jwgasul.domain.AppUser;
+import com.jwgasul.repository.AppUserRepository;
 import java.time.Instant;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;

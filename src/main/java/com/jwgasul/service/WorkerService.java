@@ -1,30 +1,60 @@
-// WorkerService.java — 근로자 CRUD 및 유형별 규칙(비자 기본값·교육 만료 자동계산·한국인 필드 정리)(F-02, 3.1)
-package com.jwgasul.worker;
+// WorkerService.java — 근로자 CRUD(유형별 규칙) + 서류 사진 업로드/교체/삭제(F-02, 3.1·3.2).
+// 외부 시스템이 없어 구현이 하나뿐이므로 인터페이스 없이 단일 클래스로 둔다(embedded PG가 실 백엔드).
+// 서버는 jpg/png만 허용(HEIC 등 거부) — 리사이즈/변환은 클라이언트가 수행한다는 전제.
+package com.jwgasul.service;
 
+import com.jwgasul.common.exception.DuplicateWorkerException;
+import com.jwgasul.domain.DocType;
+import com.jwgasul.domain.Worker;
+import com.jwgasul.domain.WorkerDocument;
+import com.jwgasul.domain.WorkerType;
+import com.jwgasul.dto.WorkerForm;
+import com.jwgasul.repository.WorkerDocumentRepository;
+import com.jwgasul.repository.WorkerRepository;
 import java.time.Instant;
+import java.util.EnumMap;
+import java.util.Map;
+import java.util.Set;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class WorkerService {
 
+    // 서버 수용 형식(클라이언트에서 JPEG로 변환 후 업로드하는 것을 전제)
+    private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of("image/jpeg", "image/png");
+    private static final Set<String> ALLOWED_EXTENSIONS = Set.of("jpg", "jpeg", "png");
+
     private final WorkerRepository workerRepository;
+    private final WorkerDocumentRepository documentRepository;
+    private final StorageService storageService;
     private final int eduValidYearsForeign;
     private final int eduValidYearsKorean;
 
     public WorkerService(
             WorkerRepository workerRepository,
+            WorkerDocumentRepository documentRepository,
+            StorageService storageService,
             @Value("${app.edu.valid-years.foreign:2}") int eduValidYearsForeign,
             @Value("${app.edu.valid-years.korean:2}") int eduValidYearsKorean) {
         this.workerRepository = workerRepository;
+        this.documentRepository = documentRepository;
+        this.storageService = storageService;
         this.eduValidYearsForeign = eduValidYearsForeign;
         this.eduValidYearsKorean = eduValidYearsKorean;
     }
+
+    // ============================================================
+    // 근로자 CRUD
+    // ============================================================
 
     // 목록 조회(유형 탭 + 이름/연락처 검색). 동적 조건은 Specification으로 조합한다.
     @Transactional(readOnly = true)
@@ -74,7 +104,7 @@ public class WorkerService {
                 form.getNameKo(), form.getBirthDate(), phone)) {
             throw new DuplicateWorkerException("이미 등록된 근로자입니다(이름·생년월일·연락처 동일)");
         }
-        Worker worker = new Worker(); // 같은 패키지 — protected 기본 생성자 접근 가능
+        Worker worker = new Worker();
         applyForm(worker, form, phone);
         return workerRepository.save(worker);
     }
@@ -158,5 +188,59 @@ public class WorkerService {
 
     private String emptyToNull(String s) {
         return StringUtils.hasText(s) ? s.trim() : null;
+    }
+
+    // ============================================================
+    // 서류 사진 (같은 근로자 메뉴의 하위 기능)
+    // ============================================================
+
+    // 근로자의 서류를 슬롯(DocType)별 맵으로 반환(상세 화면용)
+    @Transactional(readOnly = true)
+    public Map<DocType, WorkerDocument> documentsByType(Long workerId) {
+        Map<DocType, WorkerDocument> map = new EnumMap<>(DocType.class);
+        for (WorkerDocument doc : documentRepository.findByWorkerId(workerId)) {
+            map.put(doc.getDocType(), doc);
+        }
+        return map;
+    }
+
+    // 슬롯에 파일을 업로드/교체한다. 기존 파일이 있으면 스토리지에서 지우고 메타데이터를 갱신한다.
+    @Transactional
+    public WorkerDocument uploadDocument(Long workerId, DocType docType, MultipartFile file) {
+        validateImage(file);
+        StorageService.StoredFile stored = storageService.store(workerId, docType.name(), file);
+
+        WorkerDocument doc = documentRepository.findByWorkerIdAndDocType(workerId, docType).orElse(null);
+        if (doc == null) {
+            doc = new WorkerDocument(workerId, docType, stored.relativePath(), stored.originalName(), stored.size());
+        } else {
+            storageService.delete(doc.getFilePath()); // 이전 파일 제거
+            doc.replace(stored.relativePath(), stored.originalName(), stored.size());
+        }
+        return documentRepository.save(doc);
+    }
+
+    // 슬롯의 서류를 삭제한다(파일 + 레코드)
+    @Transactional
+    public void deleteDocument(Long workerId, DocType docType) {
+        documentRepository.findByWorkerIdAndDocType(workerId, docType).ifPresent(doc -> {
+            storageService.delete(doc.getFilePath());
+            documentRepository.delete(doc);
+        });
+    }
+
+    // 업로드 파일이 허용 이미지(jpg/png)인지 검증. 아니면 400.
+    private void validateImage(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "파일이 비어 있습니다");
+        }
+        String contentType = file.getContentType();
+        String ext = StringUtils.getFilenameExtension(file.getOriginalFilename());
+        boolean okType = contentType != null && ALLOWED_CONTENT_TYPES.contains(contentType.toLowerCase());
+        boolean okExt = ext != null && ALLOWED_EXTENSIONS.contains(ext.toLowerCase());
+        if (!okType || !okExt) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "지원하지 않는 형식입니다. jpg 또는 png로 변환 후 업로드하세요");
+        }
     }
 }

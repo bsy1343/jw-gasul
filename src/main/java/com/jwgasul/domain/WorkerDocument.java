@@ -1,5 +1,5 @@
 // WorkerDocument.java — 근로자 서류 사진 엔티티(worker_document, 3.2). 슬롯당 1건, 재업로드 시 교체
-package com.jwgasul.worker;
+package com.jwgasul.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

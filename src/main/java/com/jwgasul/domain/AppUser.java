@@ -1,5 +1,5 @@
 // AppUser.java — 로그인 계정 엔티티(app_user 테이블). 역할 분리 없이 단일 권한(3.4)
-package com.jwgasul.user;
+package com.jwgasul.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
