@@ -1,4 +1,4 @@
-<!-- workers/list.html — 근로자 목록(F-03): 전체/외국인/한국인 탭 + 검색 + 페이징 -->
+<!-- workers/list.html — 근로자 목록(F-03): 모바일=카드, 데스크톱=표. mobile-first. -->
 <!DOCTYPE html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/layout :: head('근로자 · 재원가설 인원관리')}"></head>
@@ -6,38 +6,76 @@
 <nav th:replace="~{fragments/layout :: nav('workers')}"></nav>
 <div th:replace="~{fragments/layout :: flash}"></div>
 
-<main class="max-w-6xl mx-auto px-4 py-8">
-    <div class="flex items-center justify-between">
-        <h1 class="text-2xl font-semibold text-slate-800">근로자</h1>
+<main class="max-w-6xl mx-auto px-3 sm:px-4 py-5 sm:py-8">
+    <div class="flex items-center justify-between gap-3">
+        <h1 class="text-xl sm:text-2xl font-semibold text-slate-800">근로자</h1>
         <a th:href="@{/workers/new}"
-           class="rounded-md bg-slate-800 text-white text-sm font-medium px-4 py-2 hover:bg-slate-700 transition">
-            + 근로자 등록
+           class="shrink-0 rounded-md bg-slate-800 text-white text-sm font-medium px-4 py-2.5 hover:bg-slate-700 transition">
+            + 등록
         </a>
     </div>
 
-    <!-- 유형 탭 -->
-    <div class="mt-6 flex items-center gap-1 border-b border-slate-200">
-        <a th:href="@{/workers(q=${q})}"
-           th:classappend="${type == null} ? 'border-slate-800 text-slate-800 font-medium' : 'border-transparent text-slate-500'"
-           class="px-4 py-2 border-b-2 -mb-px text-sm hover:text-slate-800">전체</a>
-        <a th:href="@{/workers(type='FOREIGN', q=${q})}"
-           th:classappend="${type != null and type.name() == 'FOREIGN'} ? 'border-slate-800 text-slate-800 font-medium' : 'border-transparent text-slate-500'"
-           class="px-4 py-2 border-b-2 -mb-px text-sm hover:text-slate-800">외국인</a>
-        <a th:href="@{/workers(type='KOREAN', q=${q})}"
-           th:classappend="${type != null and type.name() == 'KOREAN'} ? 'border-slate-800 text-slate-800 font-medium' : 'border-transparent text-slate-500'"
-           class="px-4 py-2 border-b-2 -mb-px text-sm hover:text-slate-800">한국인</a>
+    <!-- 만료/임박 요약(F-04) -->
+    <div class="mt-3 flex flex-wrap gap-2 text-xs">
+        <span class="px-2 py-1 rounded bg-red-50 text-red-600">비자 만료 <b th:text="${summary.visaExpired}">0</b></span>
+        <span class="px-2 py-1 rounded bg-orange-50 text-orange-600">비자 임박 <b th:text="${summary.visaImminent}">0</b></span>
+        <span class="px-2 py-1 rounded bg-red-50 text-red-600">교육 만료 <b th:text="${summary.eduExpired}">0</b></span>
+        <span class="px-2 py-1 rounded bg-orange-50 text-orange-600">교육 임박 <b th:text="${summary.eduImminent}">0</b></span>
     </div>
 
-    <!-- 검색 -->
+    <!-- 유형 탭 (모바일 가로 스크롤) -->
+    <div class="mt-4 -mx-3 sm:mx-0 px-3 sm:px-0 flex items-center gap-1 border-b border-slate-200 overflow-x-auto">
+        <a th:href="@{/workers(q=${q})}"
+           th:classappend="${type == null} ? 'border-slate-800 text-slate-800 font-medium' : 'border-transparent text-slate-500'"
+           class="shrink-0 px-4 py-2 border-b-2 -mb-px text-sm hover:text-slate-800">전체</a>
+        <a th:href="@{/workers(type='FOREIGN', q=${q})}"
+           th:classappend="${type != null and type.name() == 'FOREIGN'} ? 'border-slate-800 text-slate-800 font-medium' : 'border-transparent text-slate-500'"
+           class="shrink-0 px-4 py-2 border-b-2 -mb-px text-sm hover:text-slate-800">외국인</a>
+        <a th:href="@{/workers(type='KOREAN', q=${q})}"
+           th:classappend="${type != null and type.name() == 'KOREAN'} ? 'border-slate-800 text-slate-800 font-medium' : 'border-transparent text-slate-500'"
+           class="shrink-0 px-4 py-2 border-b-2 -mb-px text-sm hover:text-slate-800">한국인</a>
+    </div>
+
+    <!-- 검색 (모바일 전체폭) -->
     <form th:action="@{/workers}" method="get" class="mt-4 flex gap-2">
         <input type="hidden" name="type" th:if="${type != null}" th:value="${type.name()}">
         <input type="text" name="q" th:value="${q}" placeholder="이름 또는 연락처 검색"
-               class="w-64 rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
-        <button type="submit" class="rounded-md bg-slate-200 text-slate-700 text-sm px-4 py-2 hover:bg-slate-300">검색</button>
+               class="flex-1 sm:flex-none sm:w-64 rounded-md border border-slate-300 px-3 py-2.5 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
+        <button type="submit" class="shrink-0 rounded-md bg-slate-200 text-slate-700 text-sm px-4 py-2.5 hover:bg-slate-300">검색</button>
     </form>
 
-    <!-- 목록 테이블 -->
-    <div class="mt-4 overflow-x-auto bg-white rounded-lg border border-slate-200">
+    <!-- ===== 모바일: 카드 목록 (md 미만) ===== -->
+    <div class="mt-4 space-y-2 md:hidden">
+        <a th:each="w : ${workers}" th:href="@{/workers/{id}(id=${w.id})}"
+           class="block bg-white rounded-lg border border-slate-200 p-3.5 active:bg-slate-50">
+            <div class="flex items-start justify-between gap-2">
+                <div class="min-w-0">
+                    <div class="flex items-center gap-2">
+                        <span class="font-semibold text-slate-800 truncate" th:text="${w.nameKo}">이름</span>
+                        <span th:if="${w.workerType.name() == 'FOREIGN'}" class="shrink-0 text-xs px-1.5 py-0.5 rounded bg-blue-50 text-blue-600">외국인</span>
+                        <span th:if="${w.workerType.name() == 'KOREAN'}" class="shrink-0 text-xs px-1.5 py-0.5 rounded bg-green-50 text-green-600">한국인</span>
+                        <span th:if="${w.fixed}" class="shrink-0 text-xs px-1.5 py-0.5 rounded bg-amber-50 text-amber-600">고정</span>
+                    </div>
+                    <div class="mt-0.5 text-sm text-slate-500 truncate">
+                        <span th:if="${w.nameForeign}" th:text="${w.nameForeign} + ' · '">외국명 · </span>
+                        <span th:text="${w.phone}">연락처</span>
+                    </div>
+                </div>
+                <span class="shrink-0 text-slate-300 text-lg leading-none">›</span>
+            </div>
+            <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500">
+                <span>생년월일 <span class="text-slate-700" th:text="${w.birthDate}">-</span></span>
+                <span class="inline-flex items-center gap-1">비자 <span th:replace="~{fragments/layout :: expiryBadge(${w.visaStatus}, ${w.visaDday})}"></span></span>
+                <span class="inline-flex items-center gap-1">교육 <span th:replace="~{fragments/layout :: expiryBadge(${w.eduStatus}, ${w.eduDday})}"></span></span>
+            </div>
+        </a>
+        <div th:if="${workers.isEmpty()}" class="bg-white rounded-lg border border-slate-200 p-10 text-center text-slate-400">
+            등록된 근로자가 없습니다
+        </div>
+    </div>
+
+    <!-- ===== 데스크톱: 표 (md 이상) ===== -->
+    <div class="mt-4 hidden md:block overflow-x-auto bg-white rounded-lg border border-slate-200">
         <table class="w-full text-sm">
             <thead class="bg-slate-50 text-slate-500 text-left">
             <tr>
@@ -55,19 +93,15 @@
             <tbody class="divide-y divide-slate-100">
             <tr th:each="w : ${workers}" class="hover:bg-slate-50">
                 <td class="px-3 py-2">
-                    <span th:if="${w.workerType.name() == 'FOREIGN'}"
-                          class="text-xs px-2 py-0.5 rounded bg-blue-50 text-blue-600">외국인</span>
-                    <span th:if="${w.workerType.name() == 'KOREAN'}"
-                          class="text-xs px-2 py-0.5 rounded bg-green-50 text-green-600">한국인</span>
+                    <span th:if="${w.workerType.name() == 'FOREIGN'}" class="text-xs px-2 py-0.5 rounded bg-blue-50 text-blue-600">외국인</span>
+                    <span th:if="${w.workerType.name() == 'KOREAN'}" class="text-xs px-2 py-0.5 rounded bg-green-50 text-green-600">한국인</span>
                 </td>
                 <td class="px-3 py-2 font-medium text-slate-800" th:text="${w.nameKo}">이름</td>
                 <td class="px-3 py-2 text-slate-500" th:text="${w.nameForeign} ?: '-'">-</td>
                 <td class="px-3 py-2 text-slate-600" th:text="${w.birthDate}">1988-01-27</td>
                 <td class="px-3 py-2 text-slate-600" th:text="${w.phone}">01000000000</td>
-                <td class="px-3 py-2 text-slate-600"
-                    th:text="${w.visaTracked} ? ${w.visaExpireDate} : '-'">-</td>
-                <td class="px-3 py-2 text-slate-600"
-                    th:text="${w.eduExpireDate != null} ? ${w.eduExpireDate} : '미등록'">미등록</td>
+                <td class="px-3 py-2"><span th:replace="~{fragments/layout :: expiryBadge(${w.visaStatus}, ${w.visaDday})}"></span></td>
+                <td class="px-3 py-2"><span th:replace="~{fragments/layout :: expiryBadge(${w.eduStatus}, ${w.eduDday})}"></span></td>
                 <td class="px-3 py-2">
                     <span th:if="${w.fixed}" class="text-xs px-2 py-0.5 rounded bg-amber-50 text-amber-600">고정</span>
                 </td>
@@ -88,11 +122,11 @@
         <div class="flex items-center gap-2">
             <a th:if="${!page.first}"
                th:href="@{/workers(type=${type != null ? type.name() : null}, q=${q}, page=${page.number - 1})}"
-               class="px-3 py-1.5 rounded-md bg-slate-200 hover:bg-slate-300">이전</a>
+               class="px-4 py-2 rounded-md bg-slate-200 hover:bg-slate-300">이전</a>
             <span th:text="${page.number + 1} + ' / ' + ${page.totalPages}">1 / 1</span>
             <a th:if="${!page.last}"
                th:href="@{/workers(type=${type != null ? type.name() : null}, q=${q}, page=${page.number + 1})}"
-               class="px-3 py-1.5 rounded-md bg-slate-200 hover:bg-slate-300">다음</a>
+               class="px-4 py-2 rounded-md bg-slate-200 hover:bg-slate-300">다음</a>
         </div>
     </div>
 </main>

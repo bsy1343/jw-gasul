@@ -5,14 +5,23 @@ package com.jwgasul.service;
 
 import com.jwgasul.common.exception.DuplicateWorkerException;
 import com.jwgasul.domain.DocType;
+import com.jwgasul.domain.ExpiryStatus;
 import com.jwgasul.domain.Worker;
+import com.jwgasul.domain.WorkerAccount;
 import com.jwgasul.domain.WorkerDocument;
 import com.jwgasul.domain.WorkerType;
+import com.jwgasul.dto.AccountForm;
+import com.jwgasul.dto.AccountView;
+import com.jwgasul.dto.ExpirySummary;
 import com.jwgasul.dto.WorkerForm;
+import java.time.LocalDate;
+import com.jwgasul.repository.WorkerAccountRepository;
 import com.jwgasul.repository.WorkerDocumentRepository;
 import com.jwgasul.repository.WorkerRepository;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.springframework.beans.factory.annotation.Value;
@@ -33,21 +42,30 @@ public class WorkerService {
     private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of("image/jpeg", "image/png");
     private static final Set<String> ALLOWED_EXTENSIONS = Set.of("jpg", "jpeg", "png");
 
+    // 인원당 계좌 최대 개수(3.3)
+    private static final int MAX_ACCOUNTS = 3;
+
     private final WorkerRepository workerRepository;
     private final WorkerDocumentRepository documentRepository;
+    private final WorkerAccountRepository accountRepository;
     private final StorageService storageService;
+    private final AuditService auditService;
     private final int eduValidYearsForeign;
     private final int eduValidYearsKorean;
 
     public WorkerService(
             WorkerRepository workerRepository,
             WorkerDocumentRepository documentRepository,
+            WorkerAccountRepository accountRepository,
             StorageService storageService,
+            AuditService auditService,
             @Value("${app.edu.valid-years.foreign:2}") int eduValidYearsForeign,
             @Value("${app.edu.valid-years.korean:2}") int eduValidYearsKorean) {
         this.workerRepository = workerRepository;
         this.documentRepository = documentRepository;
+        this.accountRepository = accountRepository;
         this.storageService = storageService;
+        this.auditService = auditService;
         this.eduValidYearsForeign = eduValidYearsForeign;
         this.eduValidYearsKorean = eduValidYearsKorean;
     }
@@ -68,6 +86,18 @@ public class WorkerService {
             spec = spec.and(matchesKeyword(kw));
         }
         return workerRepository.findAll(spec, pageable);
+    }
+
+    // 목록 상단 요약 배지용 만료/임박 집계(F-04)
+    @Transactional(readOnly = true)
+    public ExpirySummary expirySummary() {
+        LocalDate today = LocalDate.now();
+        LocalDate limit = today.plusDays(ExpiryStatus.IMMINENT_DAYS);
+        return new ExpirySummary(
+                workerRepository.countVisaExpired(today),
+                workerRepository.countVisaImminent(today, limit),
+                workerRepository.countEduExpired(today),
+                workerRepository.countEduImminent(today, limit));
     }
 
     // 삭제되지 않은 근로자
@@ -242,5 +272,100 @@ public class WorkerService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "지원하지 않는 형식입니다. jpg 또는 png로 변환 후 업로드하세요");
         }
+    }
+
+    // ============================================================
+    // 계좌 (F-09, 3.3) — 표시는 마스킹, 전체 노출/변경은 감사 기록
+    // ============================================================
+
+    // 근로자의 계좌 목록(마스킹). 표시 순서대로.
+    @Transactional(readOnly = true)
+    public List<AccountView> accounts(Long workerId) {
+        List<AccountView> views = new ArrayList<>();
+        for (WorkerAccount a : accountRepository.findByWorkerIdOrderBySortOrderAsc(workerId)) {
+            views.add(toView(a));
+        }
+        return views;
+    }
+
+    // 계좌 추가(최대 3개). 첫 계좌는 자동 주계좌.
+    @Transactional
+    public WorkerAccount addAccount(Long workerId, AccountForm form) {
+        getActive(workerId); // 존재 검증
+        long count = accountRepository.countByWorkerId(workerId);
+        if (count >= MAX_ACCOUNTS) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "계좌는 최대 " + MAX_ACCOUNTS + "개까지 등록할 수 있습니다");
+        }
+        boolean primary = count == 0; // 첫 계좌 = 주계좌
+        WorkerAccount account = new WorkerAccount(
+                workerId, form.getBankName().trim(), digitsOnly(form.getAccountNumber()),
+                form.getAccountHolder().trim(), primary, (short) (count + 1), emptyToNull(form.getMemo()));
+        WorkerAccount saved = accountRepository.save(account);
+        auditService.log("ACCOUNT", saved.getId(), "CREATE");
+        return saved;
+    }
+
+    // 계좌 수정
+    @Transactional
+    public WorkerAccount updateAccount(Long workerId, Long accountId, AccountForm form) {
+        WorkerAccount account = getAccount(workerId, accountId);
+        account.update(form.getBankName().trim(), digitsOnly(form.getAccountNumber()),
+                form.getAccountHolder().trim(), emptyToNull(form.getMemo()));
+        WorkerAccount saved = accountRepository.save(account);
+        auditService.log("ACCOUNT", saved.getId(), "UPDATE");
+        return saved;
+    }
+
+    // 계좌 삭제
+    @Transactional
+    public void deleteAccount(Long workerId, Long accountId) {
+        WorkerAccount account = getAccount(workerId, accountId);
+        accountRepository.delete(account);
+        auditService.log("ACCOUNT", accountId, "DELETE");
+    }
+
+    // 주계좌 지정(인원당 1개). 부분 유니크(WHERE is_primary=TRUE) 위반을 막기 위해
+    // 기존 주계좌 해제를 먼저 DB에 flush한 뒤 새 주계좌를 true로 만든다(동시에 두 개 true 금지).
+    @Transactional
+    public void setPrimaryAccount(Long workerId, Long accountId) {
+        WorkerAccount target = getAccount(workerId, accountId);
+        accountRepository.findByWorkerIdAndPrimaryTrue(workerId).ifPresent(prev -> {
+            if (!prev.getId().equals(accountId)) {
+                prev.setPrimary(false);
+                accountRepository.saveAndFlush(prev); // 먼저 false 반영
+            }
+        });
+        target.setPrimary(true);
+        accountRepository.save(target);
+        auditService.log("ACCOUNT", accountId, "UPDATE", "is_primary", null, "true");
+    }
+
+    // 계좌번호 전체 노출(하이픈 제외 숫자). 감사 로그(VIEW) 기록(F-09).
+    @Transactional
+    public String revealAccount(Long workerId, Long accountId) {
+        WorkerAccount account = getAccount(workerId, accountId);
+        auditService.log("ACCOUNT", accountId, "VIEW");
+        return account.getAccountNumber();
+    }
+
+    // 근로자-계좌 소유 검증 후 계좌 반환
+    private WorkerAccount getAccount(Long workerId, Long accountId) {
+        WorkerAccount account = accountRepository.findById(accountId)
+                .orElseThrow(() -> new IllegalArgumentException("계좌를 찾을 수 없습니다: " + accountId));
+        if (!account.getWorkerId().equals(workerId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "근로자와 계좌가 일치하지 않습니다");
+        }
+        return account;
+    }
+
+    // 엔티티 → 마스킹 표시 DTO
+    private AccountView toView(WorkerAccount a) {
+        return new AccountView(a.getId(), a.getBankName(), AccountView.mask(a.getAccountNumber()),
+                a.getAccountHolder(), a.isPrimary(), a.getMemo());
+    }
+
+    // 하이픈·공백 제거 숫자만
+    private String digitsOnly(String s) {
+        return s == null ? null : s.replaceAll("\\D", "");
     }
 }

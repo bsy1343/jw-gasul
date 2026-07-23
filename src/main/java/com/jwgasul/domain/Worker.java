@@ -11,6 +11,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -80,6 +81,26 @@ public class Worker {
     // 비자 만료일 추적 대상인지(9999-12-31이면 해당없음)
     public boolean isVisaTracked() {
         return visaExpireDate != null && !VISA_NO_EXPIRE.equals(visaExpireDate);
+    }
+
+    // 비자 만료 상태(F-04) — 화면 배지·집계용. 9999-12-31이면 NONE.
+    public ExpiryStatus getVisaStatus() {
+        return ExpiryStatus.of(visaExpireDate, !isVisaTracked(), LocalDate.now());
+    }
+
+    // 교육 만료 상태(F-04). 만료일이 없으면 UNREGISTERED(미등록).
+    public ExpiryStatus getEduStatus() {
+        return ExpiryStatus.of(eduExpireDate, false, LocalDate.now());
+    }
+
+    // 비자 잔여일(D-day). 추적 대상이 아니면 null.
+    public Long getVisaDday() {
+        return isVisaTracked() ? ChronoUnit.DAYS.between(LocalDate.now(), visaExpireDate) : null;
+    }
+
+    // 교육 잔여일(D-day). 만료일이 없으면 null.
+    public Long getEduDday() {
+        return eduExpireDate != null ? ChronoUnit.DAYS.between(LocalDate.now(), eduExpireDate) : null;
     }
 
     // soft delete 처리

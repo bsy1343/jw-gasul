@@ -5,7 +5,7 @@
 <body class="min-h-screen bg-slate-100">
 <nav th:replace="~{fragments/layout :: nav('workers')}"></nav>
 
-<main class="max-w-2xl mx-auto px-4 py-8">
+<main class="max-w-2xl mx-auto px-3 sm:px-4 py-5 sm:py-8">
     <div class="flex items-center gap-2 text-sm text-slate-500">
         <a th:href="@{/workers}" class="hover:text-slate-800">근로자</a>
         <span>/</span>
@@ -35,50 +35,50 @@
             <p th:if="${#fields.hasErrors('workerType')}" th:errors="*{workerType}" class="mt-1 text-xs text-red-500"></p>
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <!-- 한국 이름 -->
             <div>
                 <label class="block text-sm font-medium text-slate-700 mb-1" for="nameKo">한국 이름 <span class="text-red-500">*</span></label>
                 <input type="text" id="nameKo" th:field="*{nameKo}"
-                       class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
+                       class="w-full rounded-md border border-slate-300 px-3 py-2.5 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
                 <p th:if="${#fields.hasErrors('nameKo')}" th:errors="*{nameKo}" class="mt-1 text-xs text-red-500"></p>
             </div>
             <!-- 외국 이름(외국인 전용) -->
             <div data-foreign-only>
                 <label class="block text-sm font-medium text-slate-700 mb-1" for="nameForeign">외국 이름</label>
                 <input type="text" id="nameForeign" th:field="*{nameForeign}"
-                       class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
+                       class="w-full rounded-md border border-slate-300 px-3 py-2.5 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
             </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <!-- 생년월일 -->
             <div>
                 <label class="block text-sm font-medium text-slate-700 mb-1" for="birthDate">생년월일 <span class="text-red-500">*</span></label>
                 <input type="date" id="birthDate" th:field="*{birthDate}"
-                       class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
+                       class="w-full rounded-md border border-slate-300 px-3 py-2.5 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
                 <p th:if="${#fields.hasErrors('birthDate')}" th:errors="*{birthDate}" class="mt-1 text-xs text-red-500"></p>
             </div>
             <!-- 휴대폰 -->
             <div>
                 <label class="block text-sm font-medium text-slate-700 mb-1" for="phone">휴대폰 <span class="text-red-500">*</span></label>
                 <input type="text" id="phone" th:field="*{phone}" placeholder="010-0000-0000"
-                       class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
+                       class="w-full rounded-md border border-slate-300 px-3 py-2.5 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
                 <p th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}" class="mt-1 text-xs text-red-500"></p>
             </div>
         </div>
 
         <!-- 외국인 전용: 국적/비자 -->
-        <div class="grid grid-cols-3 gap-4" data-foreign-only>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4" data-foreign-only>
             <div>
                 <label class="block text-sm font-medium text-slate-700 mb-1" for="nationality">국적</label>
                 <input type="text" id="nationality" th:field="*{nationality}"
-                       class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
+                       class="w-full rounded-md border border-slate-300 px-3 py-2.5 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
             </div>
             <div>
                 <label class="block text-sm font-medium text-slate-700 mb-1" for="visaGrade">비자등급</label>
                 <input type="text" id="visaGrade" th:field="*{visaGrade}" list="visa-grades"
-                       class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
+                       class="w-full rounded-md border border-slate-300 px-3 py-2.5 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
                 <datalist id="visa-grades">
                     <option value="E-9"></option><option value="H-2"></option><option value="F-4"></option>
                     <option value="F-5"></option><option value="F-6"></option><option value="D-2"></option>
@@ -87,17 +87,17 @@
             <div>
                 <label class="block text-sm font-medium text-slate-700 mb-1" for="visaExpireDate">비자 만료일</label>
                 <input type="date" id="visaExpireDate" th:field="*{visaExpireDate}"
-                       class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
+                       class="w-full rounded-md border border-slate-300 px-3 py-2.5 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
                 <p class="mt-1 text-xs text-slate-400">미입력 시 만료 관리 제외</p>
             </div>
         </div>
 
         <!-- 교육 이수일(만료일 자동 계산) -->
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
                 <label class="block text-sm font-medium text-slate-700 mb-1" for="eduCompleteDate">교육 이수일</label>
                 <input type="date" id="eduCompleteDate" th:field="*{eduCompleteDate}"
-                       class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
+                       class="w-full rounded-md border border-slate-300 px-3 py-2.5 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
                 <p class="mt-1 text-xs text-slate-400">만료일은 이수일 + 유효기간으로 자동 계산됩니다</p>
             </div>
             <div class="flex items-end">
@@ -111,7 +111,7 @@
         <div>
             <label class="block text-sm font-medium text-slate-700 mb-1" for="memo">비고</label>
             <textarea id="memo" th:field="*{memo}" rows="2"
-                      class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"></textarea>
+                      class="w-full rounded-md border border-slate-300 px-3 py-2.5 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"></textarea>
         </div>
 
         <div class="flex items-center justify-end gap-2 pt-2">

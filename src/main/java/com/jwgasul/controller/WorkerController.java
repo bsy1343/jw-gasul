@@ -5,6 +5,7 @@ import com.jwgasul.common.exception.DuplicateWorkerException;
 import com.jwgasul.domain.DocType;
 import com.jwgasul.domain.Worker;
 import com.jwgasul.domain.WorkerType;
+import com.jwgasul.dto.AccountForm;
 import com.jwgasul.dto.WorkerForm;
 import com.jwgasul.service.WorkerService;
 import jakarta.validation.Valid;
@@ -20,7 +21,9 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
@@ -44,6 +47,7 @@ public class WorkerController {
         model.addAttribute("workers", page.getContent());
         model.addAttribute("type", type);
         model.addAttribute("q", q);
+        model.addAttribute("summary", workerService.expirySummary());
         return "workers/list";
     }
 
@@ -89,6 +93,10 @@ public class WorkerController {
         }
         model.addAttribute("documents", workerService.documentsByType(id));
         model.addAttribute("docTypes", DocType.values());
+        model.addAttribute("accounts", workerService.accounts(id));
+        if (!model.containsAttribute("accountForm")) {
+            model.addAttribute("accountForm", new AccountForm());
+        }
         return "workers/detail";
     }
 
@@ -140,5 +148,62 @@ public class WorkerController {
         workerService.deleteDocument(id, docType);
         ra.addFlashAttribute("message", docType.getLabel() + " 삭제됨");
         return "redirect:/workers/" + id;
+    }
+
+    // ===== 계좌 (F-09) — 근로자 상세 화면 내 =====
+
+    // 계좌 추가
+    @PostMapping("/workers/{id}/accounts")
+    public String addAccount(@PathVariable Long id,
+                             @Valid @ModelAttribute("accountForm") AccountForm form,
+                             BindingResult binding, RedirectAttributes ra) {
+        if (binding.hasErrors()) {
+            ra.addFlashAttribute("message", binding.getFieldErrors().get(0).getDefaultMessage());
+            return "redirect:/workers/" + id;
+        }
+        try {
+            workerService.addAccount(id, form);
+            ra.addFlashAttribute("message", "계좌가 추가되었습니다");
+        } catch (ResponseStatusException e) {
+            ra.addFlashAttribute("message", e.getReason());
+        }
+        return "redirect:/workers/" + id;
+    }
+
+    // 계좌 수정
+    @PostMapping("/workers/{id}/accounts/{accountId}")
+    public String updateAccount(@PathVariable Long id, @PathVariable Long accountId,
+                                @Valid @ModelAttribute("accountForm") AccountForm form,
+                                BindingResult binding, RedirectAttributes ra) {
+        if (binding.hasErrors()) {
+            ra.addFlashAttribute("message", binding.getFieldErrors().get(0).getDefaultMessage());
+            return "redirect:/workers/" + id;
+        }
+        workerService.updateAccount(id, accountId, form);
+        ra.addFlashAttribute("message", "계좌가 수정되었습니다");
+        return "redirect:/workers/" + id;
+    }
+
+    // 계좌 삭제
+    @PostMapping("/workers/{id}/accounts/{accountId}/delete")
+    public String deleteAccount(@PathVariable Long id, @PathVariable Long accountId, RedirectAttributes ra) {
+        workerService.deleteAccount(id, accountId);
+        ra.addFlashAttribute("message", "계좌가 삭제되었습니다");
+        return "redirect:/workers/" + id;
+    }
+
+    // 주계좌 지정
+    @PostMapping("/workers/{id}/accounts/{accountId}/primary")
+    public String setPrimaryAccount(@PathVariable Long id, @PathVariable Long accountId, RedirectAttributes ra) {
+        workerService.setPrimaryAccount(id, accountId);
+        ra.addFlashAttribute("message", "주계좌로 지정되었습니다");
+        return "redirect:/workers/" + id;
+    }
+
+    // 계좌번호 전체 노출(하이픈 제외 숫자) — 클릭 시 호출, 감사 로그(VIEW) 기록. JS가 표시/복사에 사용.
+    @GetMapping("/workers/{id}/accounts/{accountId}/reveal")
+    @ResponseBody
+    public String revealAccount(@PathVariable Long id, @PathVariable Long accountId) {
+        return workerService.revealAccount(id, accountId);
     }
 }

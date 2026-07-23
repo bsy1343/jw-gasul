@@ -9,6 +9,8 @@ import java.time.LocalDate;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface WorkerRepository extends JpaRepository<Worker, Long>, JpaSpecificationExecutor<Worker> {
 
@@ -22,4 +24,17 @@ public interface WorkerRepository extends JpaRepository<Worker, Long>, JpaSpecif
     long countByDeletedAtIsNull();
 
     long countByWorkerTypeAndDeletedAtIsNull(WorkerType workerType);
+
+    // --- 만료/임박 집계(F-04). 9999-12-31은 today보다 항상 크므로 자동 제외. edu null도 자동 제외. ---
+    @Query("select count(w) from Worker w where w.deletedAt is null and w.visaExpireDate < :today")
+    long countVisaExpired(@Param("today") LocalDate today);
+
+    @Query("select count(w) from Worker w where w.deletedAt is null and w.visaExpireDate between :today and :limit")
+    long countVisaImminent(@Param("today") LocalDate today, @Param("limit") LocalDate limit);
+
+    @Query("select count(w) from Worker w where w.deletedAt is null and w.eduExpireDate < :today")
+    long countEduExpired(@Param("today") LocalDate today);
+
+    @Query("select count(w) from Worker w where w.deletedAt is null and w.eduExpireDate between :today and :limit")
+    long countEduImminent(@Param("today") LocalDate today, @Param("limit") LocalDate limit);
 }

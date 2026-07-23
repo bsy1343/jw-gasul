@@ -6,7 +6,7 @@
 <nav th:replace="~{fragments/layout :: nav('workers')}"></nav>
 <div th:replace="~{fragments/layout :: flash}"></div>
 
-<main class="max-w-3xl mx-auto px-4 py-8">
+<main class="max-w-3xl mx-auto px-3 sm:px-4 py-5 sm:py-8">
     <div class="flex items-center gap-2 text-sm text-slate-500">
         <a th:href="@{/workers}" class="hover:text-slate-800">근로자</a>
         <span>/</span>
@@ -33,39 +33,39 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
                 <label class="block text-sm font-medium text-slate-700 mb-1" for="nameKo">한국 이름 <span class="text-red-500">*</span></label>
-                <input type="text" id="nameKo" th:field="*{nameKo}" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
+                <input type="text" id="nameKo" th:field="*{nameKo}" class="w-full rounded-md border border-slate-300 px-3 py-2.5 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
                 <p th:if="${#fields.hasErrors('nameKo')}" th:errors="*{nameKo}" class="mt-1 text-xs text-red-500"></p>
             </div>
             <div data-foreign-only>
                 <label class="block text-sm font-medium text-slate-700 mb-1" for="nameForeign">외국 이름</label>
-                <input type="text" id="nameForeign" th:field="*{nameForeign}" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
+                <input type="text" id="nameForeign" th:field="*{nameForeign}" class="w-full rounded-md border border-slate-300 px-3 py-2.5 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
             </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
                 <label class="block text-sm font-medium text-slate-700 mb-1" for="birthDate">생년월일 <span class="text-red-500">*</span></label>
-                <input type="date" id="birthDate" th:field="*{birthDate}" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
+                <input type="date" id="birthDate" th:field="*{birthDate}" class="w-full rounded-md border border-slate-300 px-3 py-2.5 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
                 <p th:if="${#fields.hasErrors('birthDate')}" th:errors="*{birthDate}" class="mt-1 text-xs text-red-500"></p>
             </div>
             <div>
                 <label class="block text-sm font-medium text-slate-700 mb-1" for="phone">휴대폰 <span class="text-red-500">*</span></label>
-                <input type="text" id="phone" th:field="*{phone}" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
+                <input type="text" id="phone" th:field="*{phone}" class="w-full rounded-md border border-slate-300 px-3 py-2.5 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
                 <p th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}" class="mt-1 text-xs text-red-500"></p>
             </div>
         </div>
 
-        <div class="grid grid-cols-3 gap-4" data-foreign-only>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4" data-foreign-only>
             <div>
                 <label class="block text-sm font-medium text-slate-700 mb-1" for="nationality">국적</label>
-                <input type="text" id="nationality" th:field="*{nationality}" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
+                <input type="text" id="nationality" th:field="*{nationality}" class="w-full rounded-md border border-slate-300 px-3 py-2.5 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
             </div>
             <div>
                 <label class="block text-sm font-medium text-slate-700 mb-1" for="visaGrade">비자등급</label>
-                <input type="text" id="visaGrade" th:field="*{visaGrade}" list="visa-grades" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
+                <input type="text" id="visaGrade" th:field="*{visaGrade}" list="visa-grades" class="w-full rounded-md border border-slate-300 px-3 py-2.5 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
                 <datalist id="visa-grades">
                     <option value="E-9"></option><option value="H-2"></option><option value="F-4"></option>
                     <option value="F-5"></option><option value="F-6"></option><option value="D-2"></option>
@@ -73,14 +73,14 @@
             </div>
             <div>
                 <label class="block text-sm font-medium text-slate-700 mb-1" for="visaExpireDate">비자 만료일</label>
-                <input type="date" id="visaExpireDate" th:field="*{visaExpireDate}" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
+                <input type="date" id="visaExpireDate" th:field="*{visaExpireDate}" class="w-full rounded-md border border-slate-300 px-3 py-2.5 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
             </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
                 <label class="block text-sm font-medium text-slate-700 mb-1" for="eduCompleteDate">교육 이수일</label>
-                <input type="date" id="eduCompleteDate" th:field="*{eduCompleteDate}" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
+                <input type="date" id="eduCompleteDate" th:field="*{eduCompleteDate}" class="w-full rounded-md border border-slate-300 px-3 py-2.5 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
                 <p class="mt-1 text-xs text-slate-400">현재 교육 만료일:
                     <span th:text="${worker.eduExpireDate != null} ? ${worker.eduExpireDate} : '미등록'">미등록</span>
                 </p>
@@ -92,7 +92,7 @@
 
         <div>
             <label class="block text-sm font-medium text-slate-700 mb-1" for="memo">비고</label>
-            <textarea id="memo" th:field="*{memo}" rows="2" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"></textarea>
+            <textarea id="memo" th:field="*{memo}" rows="2" class="w-full rounded-md border border-slate-300 px-3 py-2.5 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"></textarea>
         </div>
 
         <div class="flex justify-end">
@@ -104,7 +104,7 @@
     <section class="mt-6 bg-white rounded-xl border border-slate-200 p-6">
         <h2 class="text-lg font-semibold text-slate-800">서류 사진</h2>
         <p class="text-xs text-slate-400 mt-1">jpg·png 업로드. 업로드 전 자동으로 리사이즈·JPEG 변환됩니다(최대 10MB).</p>
-        <div class="mt-4 grid grid-cols-3 gap-4">
+        <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div th:each="dt : ${docTypes}" class="border border-slate-200 rounded-lg p-3">
                 <p class="text-sm font-medium text-slate-700" th:text="${dt.label}">슬롯</p>
                 <div class="mt-2 aspect-square bg-slate-50 rounded flex items-center justify-center overflow-hidden">
@@ -128,6 +128,72 @@
         </div>
     </section>
 
+    <!-- 계좌 (F-09) — 마스킹 표시, 전체보기 시 감사 기록 -->
+    <section class="mt-6 bg-white rounded-xl border border-slate-200 p-4 sm:p-6">
+        <h2 class="text-lg font-semibold text-slate-800">계좌 <span class="text-sm font-normal text-slate-400">(최대 3개)</span></h2>
+
+        <!-- 계좌 목록 -->
+        <div class="mt-3 space-y-2">
+            <div th:each="a : ${accounts}" class="border border-slate-200 rounded-lg p-3"
+                 th:attr="data-account-id=${a.id}, data-worker-id=${worker.id}">
+                <div class="flex items-center gap-2 flex-wrap">
+                    <span class="font-medium text-slate-800" th:text="${a.bankName}">은행</span>
+                    <span th:if="${a.primary}" class="text-xs px-1.5 py-0.5 rounded bg-amber-50 text-amber-600">주계좌</span>
+                </div>
+                <div class="mt-0.5 font-mono text-sm text-slate-700 acct-number" th:text="${a.maskedNumber}">****</div>
+                <div class="text-xs text-slate-500 mt-0.5">예금주 <span th:text="${a.accountHolder}">-</span>
+                    <span th:if="${a.memo}" th:text="' · ' + ${a.memo}"></span></div>
+                <div class="mt-2 flex flex-wrap gap-2 text-xs">
+                    <button type="button" class="acct-reveal px-2 py-1.5 rounded bg-slate-100 text-slate-600 hover:bg-slate-200">전체보기</button>
+                    <button type="button" class="acct-copy px-2 py-1.5 rounded bg-slate-100 text-slate-600 hover:bg-slate-200">복사</button>
+                    <form th:unless="${a.primary}" th:action="@{/workers/{id}/accounts/{aid}/primary(id=${worker.id}, aid=${a.id})}" method="post" class="m-0">
+                        <button type="submit" class="px-2 py-1.5 rounded bg-slate-100 text-slate-600 hover:bg-slate-200">주계좌 지정</button>
+                    </form>
+                    <form th:action="@{/workers/{id}/accounts/{aid}/delete(id=${worker.id}, aid=${a.id})}" method="post" class="m-0"
+                          onsubmit="return confirm('이 계좌를 삭제할까요?');">
+                        <button type="submit" class="px-2 py-1.5 rounded bg-red-50 text-red-500 hover:bg-red-100">삭제</button>
+                    </form>
+                </div>
+            </div>
+            <p th:if="${accounts.isEmpty()}" class="text-sm text-slate-400 py-2">등록된 계좌가 없습니다.</p>
+        </div>
+
+        <!-- 계좌 추가 (3개 미만일 때) -->
+        <form th:if="${accounts.size() < 3}" th:action="@{/workers/{id}/accounts(id=${worker.id})}"
+              th:object="${accountForm}" method="post"
+              class="mt-4 border-t border-slate-100 pt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <label class="block">
+                <span class="block text-sm font-medium text-slate-700 mb-1">은행</span>
+                <input type="text" th:field="*{bankName}" list="banks"
+                       class="w-full rounded-md border border-slate-300 px-3 py-2.5 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
+                <datalist id="banks">
+                    <option value="국민"></option><option value="신한"></option><option value="우리"></option>
+                    <option value="하나"></option><option value="농협"></option><option value="기업"></option>
+                    <option value="카카오뱅크"></option><option value="토스뱅크"></option><option value="새마을금고"></option><option value="우체국"></option>
+                </datalist>
+            </label>
+            <label class="block">
+                <span class="block text-sm font-medium text-slate-700 mb-1">계좌번호</span>
+                <input type="text" th:field="*{accountNumber}" inputmode="numeric" placeholder="숫자/하이픈"
+                       class="w-full rounded-md border border-slate-300 px-3 py-2.5 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
+            </label>
+            <label class="block">
+                <span class="block text-sm font-medium text-slate-700 mb-1">예금주</span>
+                <input type="text" th:field="*{accountHolder}"
+                       class="w-full rounded-md border border-slate-300 px-3 py-2.5 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
+            </label>
+            <label class="block">
+                <span class="block text-sm font-medium text-slate-700 mb-1">메모</span>
+                <input type="text" th:field="*{memo}" placeholder="예: 가족 명의"
+                       class="w-full rounded-md border border-slate-300 px-3 py-2.5 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
+            </label>
+            <div class="sm:col-span-2 flex justify-end">
+                <button type="submit" class="rounded-md bg-slate-800 text-white text-sm font-medium px-4 py-2.5 hover:bg-slate-700">계좌 추가</button>
+            </div>
+        </form>
+        <p th:unless="${accounts.size() < 3}" class="mt-3 text-xs text-slate-400">계좌는 최대 3개까지 등록됩니다.</p>
+    </section>
+
     <!-- 위험 구역: 삭제 -->
     <section class="mt-6 bg-white rounded-xl border border-red-200 p-6">
         <h2 class="text-sm font-semibold text-red-600">근로자 삭제</h2>
@@ -141,5 +207,6 @@
 
 <script th:src="@{/js/worker-form.js}"></script>
 <script th:src="@{/js/worker-photo.js}"></script>
+<script th:src="@{/js/worker-account.js}"></script>
 </body>
 </html>

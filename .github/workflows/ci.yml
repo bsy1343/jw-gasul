@@ -15,7 +15,6 @@ env:
 jobs:
   build-and-test:
     runs-on: self-hosted
-    timeout-minutes: 25   # 빌드가 행되면 25분 후 자동 취소(무한 점유 방지)
     steps:
       - uses: actions/checkout@v4
 
