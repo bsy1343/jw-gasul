@@ -1,0 +1,62 @@
+<!-- roster/result.html — 랜덤 명부 결과(F-06): 개별 교체/제외 후 저장. mobile-first. -->
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('명부 결과 · 재원가설 인원관리')}"></head>
+<body class="min-h-screen bg-slate-100">
+<nav th:replace="~{fragments/layout :: nav('roster')}"></nav>
+
+<main class="max-w-3xl mx-auto px-3 sm:px-4 py-5 sm:py-8">
+    <h1 class="text-2xl font-semibold text-slate-800">명부 결과</h1>
+    <p class="mt-1 text-sm text-slate-500">
+        선택 <span id="member-count" th:text="${result.selected.size()}">0</span>명 · 교체/제외 후 저장하세요.
+    </p>
+    <div th:if="${result.warning}" class="mt-3 rounded-md bg-amber-50 text-amber-700 text-sm px-4 py-2.5 border border-amber-200"
+         th:text="${result.warning}">경고</div>
+
+    <form id="roster-result-form" th:action="@{/roster/save}" method="post" class="mt-4">
+        <input type="hidden" name="rosterType" value="RANDOM">
+        <!-- 저장/교체에 쓰는 조건(hidden) -->
+        <input type="hidden" name="siteId" th:value="${criteria.siteId}">
+        <input type="hidden" name="title" th:value="${criteria.title}">
+        <input type="hidden" name="targetDate" th:value="${criteria.targetDate}">
+        <input type="hidden" name="count" th:value="${criteria.count}">
+        <input type="hidden" name="type" th:value="${criteria.type != null ? criteria.type.name() : ''}">
+        <input type="hidden" name="excludeVisaExpired" th:value="${criteria.excludeVisaExpired}">
+        <input type="hidden" name="excludeVisaImminent" th:value="${criteria.excludeVisaImminent}">
+        <input type="hidden" name="excludeEduExpired" th:value="${criteria.excludeEduExpired}">
+        <input type="hidden" name="excludeMissingDoc" th:value="${criteria.excludeMissingDoc}">
+
+        <div id="roster-rows" class="space-y-2">
+            <div th:each="w : ${result.selected}" class="roster-row bg-white rounded-lg border border-slate-200 p-3"
+                 th:attr="data-id=${w.id}, data-fixed=${w.fixed}">
+                <input type="hidden" name="workerIds" th:value="${w.id}">
+                <div class="flex items-start justify-between gap-2">
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="font-medium text-slate-800 row-name" th:text="${w.nameKo}">이름</span>
+                            <span th:if="${w.workerType.name() == 'FOREIGN'}" class="text-xs px-1.5 py-0.5 rounded bg-blue-50 text-blue-600">외국인</span>
+                            <span th:if="${w.fixed}" class="text-xs px-1.5 py-0.5 rounded bg-amber-50 text-amber-600">고정</span>
+                        </div>
+                        <div class="mt-0.5 text-sm text-slate-500 row-sub">
+                            <span th:if="${w.nameForeign}" th:text="${w.nameForeign} + ' · '"></span>
+                            <span th:text="${w.phone}">연락처</span> · <span th:text="${w.birthDate}">생년월일</span>
+                        </div>
+                    </div>
+                    <div class="shrink-0 flex gap-1 text-xs" th:unless="${w.fixed}">
+                        <button type="button" class="row-replace px-2 py-1.5 rounded bg-slate-100 text-slate-600 hover:bg-slate-200">교체</button>
+                        <button type="button" class="row-remove px-2 py-1.5 rounded bg-red-50 text-red-500 hover:bg-red-100">제외</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-4 flex items-center gap-2">
+            <a th:href="@{/roster/random}" class="rounded-md bg-slate-100 text-slate-600 text-sm px-4 py-2.5 hover:bg-slate-200">조건 변경</a>
+            <button type="submit" class="rounded-md bg-slate-800 text-white text-sm font-medium px-5 py-2.5 hover:bg-slate-700">명부 저장</button>
+        </div>
+    </form>
+</main>
+
+<script th:src="@{/js/roster-result.js}"></script>
+</body>
+</html>

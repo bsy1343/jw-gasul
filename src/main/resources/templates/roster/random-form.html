@@ -1,0 +1,70 @@
+<!-- roster/random-form.html — 랜덤 명부 생성 조건(F-06). mobile-first. -->
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('랜덤 명부 · 재원가설 인원관리')}"></head>
+<body class="min-h-screen bg-slate-100">
+<nav th:replace="~{fragments/layout :: nav('roster')}"></nav>
+<div th:replace="~{fragments/layout :: flash}"></div>
+
+<main class="max-w-2xl mx-auto px-3 sm:px-4 py-5 sm:py-8">
+    <div class="flex items-center gap-2 text-sm text-slate-500">
+        <a th:href="@{/roster}" class="hover:text-slate-800">명부</a><span>/</span><span class="text-slate-800">랜덤 생성</span>
+    </div>
+    <h1 class="mt-2 text-2xl font-semibold text-slate-800">랜덤 명부 생성</h1>
+
+    <form th:action="@{/roster/random}" th:object="${criteria}" method="post"
+          class="mt-6 space-y-5 bg-white rounded-xl border border-slate-200 p-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1" for="siteId">현장 (등록 현장)</label>
+                <select id="siteId" th:field="*{siteId}"
+                        class="w-full rounded-md border border-slate-300 px-3 py-2.5 text-base sm:text-sm">
+                    <option value="">— 직접 입력 —</option>
+                    <option th:each="s : ${sites}" th:value="${s.id}" th:text="${s.name}">현장</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1" for="title">임시 현장 제목</label>
+                <input type="text" id="title" th:field="*{title}" placeholder="현장 미선택 시 사용"
+                       class="w-full rounded-md border border-slate-300 px-3 py-2.5 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
+            </div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1" for="targetDate">날짜 <span class="text-red-500">*</span></label>
+                <input type="date" id="targetDate" th:field="*{targetDate}"
+                       class="w-full rounded-md border border-slate-300 px-3 py-2.5 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
+                <p th:if="${#fields.hasErrors('targetDate')}" th:errors="*{targetDate}" class="mt-1 text-xs text-red-500"></p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1" for="count">필요 인원 수 <span class="text-red-500">*</span></label>
+                <input type="number" id="count" th:field="*{count}" min="1" inputmode="numeric"
+                       class="w-full rounded-md border border-slate-300 px-3 py-2.5 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
+                <p th:if="${#fields.hasErrors('count')}" th:errors="*{count}" class="mt-1 text-xs text-red-500"></p>
+            </div>
+        </div>
+        <div>
+            <span class="block text-sm font-medium text-slate-700 mb-1">대상</span>
+            <div class="flex flex-wrap gap-4 text-sm">
+                <label class="flex items-center gap-2"><input type="radio" th:field="*{type}" value=""> 전체</label>
+                <label class="flex items-center gap-2"><input type="radio" th:field="*{type}" value="FOREIGN"> 외국인</label>
+                <label class="flex items-center gap-2"><input type="radio" th:field="*{type}" value="KOREAN"> 한국인</label>
+            </div>
+        </div>
+        <div>
+            <span class="block text-sm font-medium text-slate-700 mb-1">제외 옵션</span>
+            <div class="flex flex-col gap-2 text-sm text-slate-700">
+                <label class="flex items-center gap-2"><input type="checkbox" th:field="*{excludeVisaExpired}"> 비자 만료자 제외</label>
+                <label class="flex items-center gap-2"><input type="checkbox" th:field="*{excludeVisaImminent}"> 비자 임박자(D-7) 제외</label>
+                <label class="flex items-center gap-2"><input type="checkbox" th:field="*{excludeEduExpired}"> 교육 만료자 제외</label>
+                <label class="flex items-center gap-2"><input type="checkbox" th:field="*{excludeMissingDoc}"> 서류 미비자 제외</label>
+            </div>
+        </div>
+        <div class="flex justify-end">
+            <button type="submit" class="rounded-md bg-slate-800 text-white text-sm font-medium px-5 py-2.5 hover:bg-slate-700">명부 생성</button>
+        </div>
+    </form>
+    <p class="mt-3 text-xs text-slate-400">고정 인원은 항상 포함되며 필요 인원 수에 포함됩니다.</p>
+</main>
+</body>
+</html>

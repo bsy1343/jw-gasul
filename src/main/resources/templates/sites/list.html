@@ -1,0 +1,91 @@
+<!-- sites/list.html — 현장 목록(F-05): 진행 중/종료/전체 탭. 모바일 카드 + 데스크톱 표. -->
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('현장 · 재원가설 인원관리')}"></head>
+<body class="min-h-screen bg-slate-100">
+<nav th:replace="~{fragments/layout :: nav('sites')}"></nav>
+<div th:replace="~{fragments/layout :: flash}"></div>
+
+<main class="max-w-6xl mx-auto px-3 sm:px-4 py-5 sm:py-8">
+    <div class="flex items-center justify-between gap-3">
+        <h1 class="text-xl sm:text-2xl font-semibold text-slate-800">현장</h1>
+        <a th:href="@{/sites/new}"
+           class="shrink-0 rounded-md bg-slate-800 text-white text-sm font-medium px-4 py-2.5 hover:bg-slate-700 transition">+ 등록</a>
+    </div>
+
+    <!-- 진행 여부 탭 -->
+    <div class="mt-4 -mx-3 sm:mx-0 px-3 sm:px-0 flex items-center gap-1 border-b border-slate-200 overflow-x-auto">
+        <a th:href="@{/sites}" th:classappend="${active == null} ? 'border-slate-800 text-slate-800 font-medium' : 'border-transparent text-slate-500'"
+           class="shrink-0 px-4 py-2 border-b-2 -mb-px text-sm hover:text-slate-800">전체</a>
+        <a th:href="@{/sites(active=true)}" th:classappend="${active != null and active} ? 'border-slate-800 text-slate-800 font-medium' : 'border-transparent text-slate-500'"
+           class="shrink-0 px-4 py-2 border-b-2 -mb-px text-sm hover:text-slate-800">진행 중</a>
+        <a th:href="@{/sites(active=false)}" th:classappend="${active != null and !active} ? 'border-slate-800 text-slate-800 font-medium' : 'border-transparent text-slate-500'"
+           class="shrink-0 px-4 py-2 border-b-2 -mb-px text-sm hover:text-slate-800">종료</a>
+    </div>
+
+    <!-- 모바일 카드 -->
+    <div class="mt-4 space-y-2 md:hidden">
+        <a th:each="s : ${sites}" th:href="@{/sites/{id}(id=${s.id})}"
+           class="block bg-white rounded-lg border border-slate-200 p-3.5 active:bg-slate-50">
+            <div class="flex items-start justify-between gap-2">
+                <div class="min-w-0">
+                    <div class="flex items-center gap-2">
+                        <span class="font-semibold text-slate-800 truncate" th:text="${s.name}">현장명</span>
+                        <span th:if="${s.active}" class="shrink-0 text-xs px-1.5 py-0.5 rounded bg-green-50 text-green-600">진행</span>
+                        <span th:unless="${s.active}" class="shrink-0 text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">종료</span>
+                    </div>
+                    <div class="mt-0.5 text-sm text-slate-500 truncate" th:text="${s.clientName} ?: '발주처 미입력'">발주처</div>
+                </div>
+                <span class="shrink-0 text-slate-300 text-lg leading-none">›</span>
+            </div>
+            <div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
+                <span th:if="${s.address}" th:text="${s.address}">주소</span>
+                <span th:if="${s.startDate != null or s.endDate != null}">
+                    <span th:text="${s.startDate} ?: '?'">시작</span> ~ <span th:text="${s.endDate} ?: '?'">종료</span>
+                </span>
+            </div>
+        </a>
+        <div th:if="${sites.isEmpty()}" class="bg-white rounded-lg border border-slate-200 p-10 text-center text-slate-400">현장이 없습니다</div>
+    </div>
+
+    <!-- 데스크톱 표 -->
+    <div class="mt-4 hidden md:block overflow-x-auto bg-white rounded-lg border border-slate-200">
+        <table class="w-full text-sm">
+            <thead class="bg-slate-50 text-slate-500 text-left">
+            <tr>
+                <th class="px-3 py-2 font-medium">현장명</th>
+                <th class="px-3 py-2 font-medium">발주처</th>
+                <th class="px-3 py-2 font-medium">주소</th>
+                <th class="px-3 py-2 font-medium">공사기간</th>
+                <th class="px-3 py-2 font-medium">상태</th>
+                <th class="px-3 py-2 font-medium text-right">관리</th>
+            </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+            <tr th:each="s : ${sites}" class="hover:bg-slate-50">
+                <td class="px-3 py-2 font-medium text-slate-800" th:text="${s.name}">현장명</td>
+                <td class="px-3 py-2 text-slate-600" th:text="${s.clientName} ?: '-'">-</td>
+                <td class="px-3 py-2 text-slate-600" th:text="${s.address} ?: '-'">-</td>
+                <td class="px-3 py-2 text-slate-600">
+                    <span th:if="${s.startDate != null or s.endDate != null}">
+                        <span th:text="${s.startDate} ?: '?'">?</span> ~ <span th:text="${s.endDate} ?: '?'">?</span>
+                    </span>
+                    <span th:unless="${s.startDate != null or s.endDate != null}">-</span>
+                </td>
+                <td class="px-3 py-2">
+                    <span th:if="${s.active}" class="text-xs px-2 py-0.5 rounded bg-green-50 text-green-600">진행</span>
+                    <span th:unless="${s.active}" class="text-xs px-2 py-0.5 rounded bg-slate-100 text-slate-500">종료</span>
+                </td>
+                <td class="px-3 py-2 text-right">
+                    <a th:href="@{/sites/{id}(id=${s.id})}" class="text-slate-600 hover:text-slate-900 underline">상세</a>
+                </td>
+            </tr>
+            <tr th:if="${sites.isEmpty()}">
+                <td colspan="6" class="px-3 py-10 text-center text-slate-400">현장이 없습니다</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</main>
+</body>
+</html>

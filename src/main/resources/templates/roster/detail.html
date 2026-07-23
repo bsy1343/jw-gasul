@@ -1,0 +1,53 @@
+<!-- roster/detail.html — 명부 상세(3.6): 생성 시점 인적사항 스냅샷 구성원. 엑셀은 Stage 7. mobile-first. -->
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('명부 상세 · 재원가설 인원관리')}"></head>
+<body class="min-h-screen bg-slate-100">
+<nav th:replace="~{fragments/layout :: nav('roster')}"></nav>
+<div th:replace="~{fragments/layout :: flash}"></div>
+
+<main class="max-w-3xl mx-auto px-3 sm:px-4 py-5 sm:py-8">
+    <div class="flex items-center gap-2 text-sm text-slate-500">
+        <a th:href="@{/roster}" class="hover:text-slate-800">명부</a><span>/</span>
+        <span class="text-slate-800" th:text="${roster.title}">현장/제목</span>
+    </div>
+    <div class="mt-2 flex items-start justify-between gap-3">
+        <div>
+            <h1 class="text-2xl font-semibold text-slate-800" th:text="${roster.title}">현장/제목</h1>
+            <p class="mt-1 text-sm text-slate-500">
+                <span th:text="${roster.targetDate}">날짜</span>
+                · <span th:text="${roster.type.name() == 'RANDOM'} ? '랜덤' : '선택'">유형</span>
+                · <span th:text="${members.size()}">0</span>명
+                <span th:if="${roster.createdBy}" th:text="' · ' + ${roster.createdBy}"></span>
+            </p>
+        </div>
+        <span class="shrink-0 rounded-md bg-slate-100 text-slate-400 text-sm px-3 py-2" title="Stage 7">엑셀(준비중)</span>
+    </div>
+
+    <div class="mt-5 bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <table class="w-full text-sm">
+            <thead class="bg-slate-50 text-slate-500 text-left">
+            <tr>
+                <th class="px-3 py-2 font-medium">이름</th>
+                <th class="px-3 py-2 font-medium">외국명</th>
+                <th class="px-3 py-2 font-medium">연락처</th>
+                <th class="px-3 py-2 font-medium">생년월일</th>
+            </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+            <tr th:each="m : ${members}">
+                <td class="px-3 py-2 font-medium text-slate-800" th:text="${m.snapNameKo}">이름</td>
+                <td class="px-3 py-2 text-slate-500" th:text="${m.snapNameForeign} ?: '-'">-</td>
+                <td class="px-3 py-2 text-slate-600" th:text="${m.snapPhone}">연락처</td>
+                <td class="px-3 py-2 text-slate-600" th:text="${m.snapBirthDate}">생년월일</td>
+            </tr>
+            <tr th:if="${members.isEmpty()}">
+                <td colspan="4" class="px-3 py-8 text-center text-slate-400">구성원이 없습니다</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+    <p class="mt-3 text-xs text-slate-400">인적사항은 명부 생성 당시 스냅샷입니다(이후 근로자 변경과 무관하게 보존).</p>
+</main>
+</body>
+</html>

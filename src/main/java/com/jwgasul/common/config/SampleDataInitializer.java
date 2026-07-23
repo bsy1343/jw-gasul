@@ -5,8 +5,10 @@ package com.jwgasul.common.config;
 import com.jwgasul.domain.Worker;
 import com.jwgasul.domain.WorkerType;
 import com.jwgasul.dto.AccountForm;
+import com.jwgasul.dto.SiteForm;
 import com.jwgasul.dto.WorkerForm;
 import com.jwgasul.repository.WorkerRepository;
+import com.jwgasul.service.SiteService;
 import com.jwgasul.service.WorkerService;
 import java.time.LocalDate;
 import org.slf4j.Logger;
@@ -25,10 +27,13 @@ public class SampleDataInitializer implements CommandLineRunner {
 
     private final WorkerRepository workerRepository;
     private final WorkerService workerService;
+    private final SiteService siteService;
 
-    public SampleDataInitializer(WorkerRepository workerRepository, WorkerService workerService) {
+    public SampleDataInitializer(WorkerRepository workerRepository, WorkerService workerService,
+                                 SiteService siteService) {
         this.workerRepository = workerRepository;
         this.workerService = workerService;
+        this.siteService = siteService;
     }
 
     // 근로자가 하나도 없을 때만 샘플을 생성한다
@@ -58,7 +63,24 @@ public class SampleDataInitializer implements CommandLineRunner {
         workerService.addAccount(w1.getId(), account("신한", "110234567890", "Nguyen Van Nam", "가족 명의"));
         workerService.addAccount(w5.getId(), account("농협", "3021234567890", "김철수", null));
 
-        log.info("샘플 근로자 {}명 생성", workerRepository.count());
+        // 샘플 현장(진행 중 2 + 종료 1)
+        siteService.create(site("OO공장 3라인 증설", "OO건설", "경기 화성시", today.minusMonths(1), today.plusMonths(2), true));
+        siteService.create(site("△△물류센터 신축", "△△디벨롭먼트", "충북 청주시", today.minusDays(10), null, true));
+        siteService.create(site("□□아파트 리모델링", "□□종합건설", "서울 강서구", today.minusMonths(6), today.minusMonths(1), false));
+
+        log.info("샘플 근로자 {}명, 현장 3곳 생성", workerRepository.count());
+    }
+
+    // 현장 샘플 폼 구성
+    private SiteForm site(String name, String client, String address, LocalDate start, LocalDate end, boolean active) {
+        SiteForm f = new SiteForm();
+        f.setName(name);
+        f.setClientName(client);
+        f.setAddress(address);
+        f.setStartDate(start);
+        f.setEndDate(end);
+        f.setActive(active);
+        return f;
     }
 
     // 외국인 샘플 폼 구성

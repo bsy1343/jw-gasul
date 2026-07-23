@@ -24,8 +24,10 @@
                class="shrink-0 px-3 py-1.5 rounded-md hover:bg-slate-700 transition">대시보드</a>
             <a th:href="@{/workers}" th:classappend="${active == 'workers'} ? 'bg-slate-700' : ''"
                class="shrink-0 px-3 py-1.5 rounded-md hover:bg-slate-700 transition">근로자</a>
-            <span class="shrink-0 px-3 py-1.5 rounded-md text-slate-500 cursor-not-allowed" title="이후 단계">현장</span>
-            <span class="shrink-0 px-3 py-1.5 rounded-md text-slate-500 cursor-not-allowed" title="이후 단계">명부</span>
+            <a th:href="@{/sites}" th:classappend="${active == 'sites'} ? 'bg-slate-700' : ''"
+               class="shrink-0 px-3 py-1.5 rounded-md hover:bg-slate-700 transition">현장</a>
+            <a th:href="@{/roster}" th:classappend="${active == 'roster'} ? 'bg-slate-700' : ''"
+               class="shrink-0 px-3 py-1.5 rounded-md hover:bg-slate-700 transition">명부</a>
         </div>
     </div>
 </nav>

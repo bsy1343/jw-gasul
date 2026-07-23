@@ -1,0 +1,62 @@
+<!-- roster/select.html — 수동 선택 명부(F-07): 근로자 체크박스 다중 선택 + 현장/날짜 → 저장. mobile-first. -->
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('선택 명부 · 재원가설 인원관리')}"></head>
+<body class="min-h-screen bg-slate-100">
+<nav th:replace="~{fragments/layout :: nav('roster')}"></nav>
+<div th:replace="~{fragments/layout :: flash}"></div>
+
+<main class="max-w-3xl mx-auto px-3 sm:px-4 py-5 sm:py-8">
+    <div class="flex items-center gap-2 text-sm text-slate-500">
+        <a th:href="@{/roster}" class="hover:text-slate-800">명부</a><span>/</span><span class="text-slate-800">선택 명부</span>
+    </div>
+    <h1 class="mt-2 text-2xl font-semibold text-slate-800">선택 명부</h1>
+
+    <form th:action="@{/roster/save}" method="post" class="mt-6">
+        <input type="hidden" name="rosterType" value="MANUAL">
+
+        <!-- 현장/제목/날짜 -->
+        <div class="bg-white rounded-xl border border-slate-200 p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <label class="block">
+                <span class="block text-sm font-medium text-slate-700 mb-1">현장</span>
+                <select name="siteId" class="w-full rounded-md border border-slate-300 px-3 py-2.5 text-base sm:text-sm">
+                    <option value="">— 직접 입력 —</option>
+                    <option th:each="s : ${sites}" th:value="${s.id}" th:text="${s.name}">현장</option>
+                </select>
+            </label>
+            <label class="block">
+                <span class="block text-sm font-medium text-slate-700 mb-1">임시 제목</span>
+                <input type="text" name="title" placeholder="현장 미선택 시"
+                       class="w-full rounded-md border border-slate-300 px-3 py-2.5 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
+            </label>
+            <label class="block">
+                <span class="block text-sm font-medium text-slate-700 mb-1">날짜</span>
+                <input type="date" name="targetDate"
+                       class="w-full rounded-md border border-slate-300 px-3 py-2.5 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
+            </label>
+        </div>
+
+        <!-- 근로자 선택 -->
+        <div class="mt-4 space-y-2">
+            <label th:each="w : ${workers}"
+                   class="flex items-center gap-3 bg-white rounded-lg border border-slate-200 p-3 cursor-pointer">
+                <input type="checkbox" name="workerIds" th:value="${w.id}" class="shrink-0 w-4 h-4">
+                <span class="min-w-0">
+                    <span class="font-medium text-slate-800" th:text="${w.nameKo}">이름</span>
+                    <span th:if="${w.fixed}" class="text-xs px-1.5 py-0.5 rounded bg-amber-50 text-amber-600 ml-1">고정</span>
+                    <span class="block text-xs text-slate-500 truncate">
+                        <span th:if="${w.nameForeign}" th:text="${w.nameForeign} + ' · '"></span>
+                        <span th:text="${w.phone}">연락처</span> · <span th:text="${w.birthDate}">생년월일</span>
+                    </span>
+                </span>
+            </label>
+            <p th:if="${workers.isEmpty()}" class="text-sm text-slate-400 py-4 text-center">등록된 근로자가 없습니다</p>
+        </div>
+
+        <div class="mt-4 flex justify-end">
+            <button type="submit" class="rounded-md bg-slate-800 text-white text-sm font-medium px-5 py-2.5 hover:bg-slate-700">선택 인원으로 명부 저장</button>
+        </div>
+    </form>
+</main>
+</body>
+</html>

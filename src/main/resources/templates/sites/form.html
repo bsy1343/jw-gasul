@@ -1,0 +1,61 @@
+<!-- sites/form.html — 현장 등록 폼(F-05). mobile-first. -->
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('현장 등록 · 재원가설 인원관리')}"></head>
+<body class="min-h-screen bg-slate-100">
+<nav th:replace="~{fragments/layout :: nav('sites')}"></nav>
+
+<main class="max-w-2xl mx-auto px-3 sm:px-4 py-5 sm:py-8">
+    <div class="flex items-center gap-2 text-sm text-slate-500">
+        <a th:href="@{/sites}" class="hover:text-slate-800">현장</a><span>/</span><span class="text-slate-800">등록</span>
+    </div>
+    <h1 class="mt-2 text-2xl font-semibold text-slate-800">현장 등록</h1>
+
+    <form th:action="@{/sites}" th:object="${siteForm}" method="post"
+          class="mt-6 space-y-5 bg-white rounded-xl border border-slate-200 p-6">
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1" for="name">현장명 <span class="text-red-500">*</span></label>
+            <input type="text" id="name" th:field="*{name}" placeholder="예: OO공장 3라인"
+                   class="w-full rounded-md border border-slate-300 px-3 py-2.5 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
+            <p th:if="${#fields.hasErrors('name')}" th:errors="*{name}" class="mt-1 text-xs text-red-500"></p>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1" for="clientName">발주처</label>
+                <input type="text" id="clientName" th:field="*{clientName}"
+                       class="w-full rounded-md border border-slate-300 px-3 py-2.5 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1" for="address">주소</label>
+                <input type="text" id="address" th:field="*{address}"
+                       class="w-full rounded-md border border-slate-300 px-3 py-2.5 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
+            </div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1" for="startDate">시작일</label>
+                <input type="date" id="startDate" th:field="*{startDate}"
+                       class="w-full rounded-md border border-slate-300 px-3 py-2.5 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1" for="endDate">종료일</label>
+                <input type="date" id="endDate" th:field="*{endDate}"
+                       class="w-full rounded-md border border-slate-300 px-3 py-2.5 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
+            </div>
+        </div>
+        <div>
+            <label class="flex items-center gap-2 text-sm text-slate-700"><input type="checkbox" th:field="*{active}"> 진행 중</label>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1" for="memo">비고</label>
+            <textarea id="memo" th:field="*{memo}" rows="2"
+                      class="w-full rounded-md border border-slate-300 px-3 py-2.5 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"></textarea>
+        </div>
+        <div class="flex items-center justify-end gap-2 pt-2">
+            <a th:href="@{/sites}" class="rounded-md bg-slate-100 text-slate-600 text-sm px-4 py-2 hover:bg-slate-200">취소</a>
+            <button type="submit" class="rounded-md bg-slate-800 text-white text-sm font-medium px-5 py-2 hover:bg-slate-700">저장</button>
+        </div>
+    </form>
+</main>
+</body>
+</html>

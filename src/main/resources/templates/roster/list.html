@@ -1,0 +1,42 @@
+<!-- roster/list.html — 명부 이력(3.6). mobile-first. -->
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('명부 · 재원가설 인원관리')}"></head>
+<body class="min-h-screen bg-slate-100">
+<nav th:replace="~{fragments/layout :: nav('roster')}"></nav>
+<div th:replace="~{fragments/layout :: flash}"></div>
+
+<main class="max-w-6xl mx-auto px-3 sm:px-4 py-5 sm:py-8">
+    <div class="flex items-center justify-between gap-3">
+        <h1 class="text-xl sm:text-2xl font-semibold text-slate-800">명부</h1>
+        <div class="shrink-0 flex gap-2">
+            <a th:href="@{/roster/random}" class="rounded-md bg-slate-800 text-white text-sm font-medium px-3 sm:px-4 py-2.5 hover:bg-slate-700">랜덤 생성</a>
+            <a th:href="@{/roster/selected}" class="rounded-md bg-slate-200 text-slate-700 text-sm font-medium px-3 sm:px-4 py-2.5 hover:bg-slate-300">선택 명부</a>
+        </div>
+    </div>
+
+    <div class="mt-4 space-y-2">
+        <a th:each="r : ${rosters}" th:href="@{/roster/{id}(id=${r.id})}"
+           class="block bg-white rounded-lg border border-slate-200 p-3.5 active:bg-slate-50">
+            <div class="flex items-center justify-between gap-2">
+                <div class="min-w-0">
+                    <div class="flex items-center gap-2">
+                        <span class="font-semibold text-slate-800 truncate" th:text="${r.title}">현장/제목</span>
+                        <span th:if="${r.type.name() == 'RANDOM'}" class="shrink-0 text-xs px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-600">랜덤</span>
+                        <span th:if="${r.type.name() == 'MANUAL'}" class="shrink-0 text-xs px-1.5 py-0.5 rounded bg-teal-50 text-teal-600">선택</span>
+                    </div>
+                    <div class="mt-0.5 text-xs text-slate-500">
+                        <span th:text="${r.targetDate}">날짜</span>
+                        <span th:if="${r.createdBy}" th:text="' · ' + ${r.createdBy}"></span>
+                    </div>
+                </div>
+                <span class="shrink-0 text-slate-300 text-lg leading-none">›</span>
+            </div>
+        </a>
+        <div th:if="${rosters.isEmpty()}" class="bg-white rounded-lg border border-slate-200 p-10 text-center text-slate-400">
+            생성된 명부가 없습니다
+        </div>
+    </div>
+</main>
+</body>
+</html>
