@@ -13,6 +13,8 @@ RUN ./gradlew bootJar --no-daemon
 
 # Stage 2: CI 검증 (테스트)
 FROM build AS ci
+RUN useradd -m ci && chown -R ci:ci /app
+USER ci
 RUN ./gradlew test --no-daemon
 
 # Stage 3: 런타임 (JRE)
