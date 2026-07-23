@@ -1,0 +1,12 @@
+# Docker 빌드 컨텍스트에서 제외 — 빌드 산출물·VCS·IDE·업로드 데이터
+.git
+.github
+.gradle
+build
+.idea
+*.iml
+data
+docs
+.serena
+compose.yaml
+*.md
