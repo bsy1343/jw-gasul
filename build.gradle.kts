@@ -57,3 +57,8 @@ dependencies {
 tasks.withType<Test> {
 	useJUnitPlatform()
 }
+
+// 실행 가능한 bootJar만 생성한다(플레인 -plain.jar 비활성). Docker 런타임 COPY 대상을 명확히 한다.
+tasks.named<Jar>("jar") {
+	enabled = false
+}
