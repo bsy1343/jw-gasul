@@ -13,12 +13,15 @@ import com.jwgasul.domain.WorkerType;
 import com.jwgasul.dto.AccountForm;
 import com.jwgasul.dto.AccountView;
 import com.jwgasul.dto.ExpirySummary;
+import com.jwgasul.dto.ImportResult;
 import com.jwgasul.dto.WorkerFilter;
 import com.jwgasul.dto.WorkerForm;
 import java.time.LocalDate;
 import com.jwgasul.repository.WorkerAccountRepository;
 import com.jwgasul.repository.WorkerDocumentRepository;
 import com.jwgasul.repository.WorkerRepository;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -27,6 +30,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.DateUtil;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -462,5 +473,237 @@ public class WorkerService {
     // 하이픈·공백 제거 숫자만
     private String digitsOnly(String s) {
         return s == null ? null : s.replaceAll("\\D", "");
+    }
+
+    // ============================================================
+    // 엑셀 일괄등록 (명단 + 계좌). 사진은 미포함(스프레드시트 행 매핑이 불안정 → 별도 방식 예정).
+    //   행 단위 사전검증으로 유효행만 DB에 기록 → 잘못된 행은 DB를 건드리지 않아 PG 트랜잭션이 오염되지 않는다.
+    // ============================================================
+
+    private static final String[] IMPORT_HEADERS = {
+            "유형(외국인/한국인)", "한국이름*", "외국이름", "생년월일*(YYYY-MM-DD)", "연락처*",
+            "국적", "비자등급", "비자만료일(YYYY-MM-DD)", "교육이수일(YYYY-MM-DD)", "고정(Y/N)", "비고",
+            "은행1", "예금주1", "계좌번호1", "은행2", "예금주2", "계좌번호2", "은행3", "예금주3", "계좌번호3"
+    };
+
+    // 빈 템플릿(헤더 + 예시 1행) 생성 — 다운로드 제공
+    public byte[] buildImportTemplate() {
+        try (Workbook wb = new XSSFWorkbook()) {
+            Sheet sheet = wb.createSheet("근로자");
+            Row header = sheet.createRow(0);
+            for (int i = 0; i < IMPORT_HEADERS.length; i++) {
+                header.createCell(i).setCellValue(IMPORT_HEADERS[i]);
+                sheet.setColumnWidth(i, 18 * 256);
+            }
+            String[] sample = {
+                    "외국인", "홍길동", "Hong Gil Dong", "1990-01-15", "010-1234-5678",
+                    "베트남", "E-9", "2027-05-01", "2026-01-10", "N", "(예시행 — 삭제 후 입력하세요)",
+                    "국민", "홍길동", "123-45-678901", "", "", "", "", "", ""
+            };
+            Row ex = sheet.createRow(1);
+            for (int i = 0; i < sample.length; i++) {
+                ex.createCell(i).setCellValue(sample[i]);
+            }
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            wb.write(out);
+            return out.toByteArray();
+        } catch (IOException e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "템플릿 생성에 실패했습니다");
+        }
+    }
+
+    // 엑셀 파싱 → 근로자/계좌 일괄 등록. 필수값·유형·중복은 사전검증하여 유효행만 저장한다.
+    @Transactional
+    public ImportResult importExcel(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "파일이 비어 있습니다");
+        }
+        int total = 0;
+        int created = 0;
+        int skipped = 0;
+        List<String> errors = new ArrayList<>();
+
+        try (Workbook wb = WorkbookFactory.create(file.getInputStream())) {
+            Sheet sheet = wb.getSheetAt(0);
+            int last = sheet.getLastRowNum();
+            for (int r = 1; r <= last; r++) { // 0행 = 헤더
+                Row row = sheet.getRow(r);
+                if (row == null || isBlankRow(row)) {
+                    continue;
+                }
+                int rowNo = r + 1; // 사람이 보는 엑셀 행 번호(1-based)
+                total++;
+
+                // 1) 셀 파싱(DB 접근 전) — 형식 오류는 이 단계에서 걸러 트랜잭션을 건드리지 않는다
+                String typeStr, nameKo, phone, nameForeign, nationality, visaGrade, memo, fixedStr;
+                LocalDate birth, visaExp, eduDate;
+                try {
+                    typeStr = cellStr(row, 0);
+                    nameKo = cellStr(row, 1);
+                    nameForeign = cellStr(row, 2);
+                    birth = cellDate(row, 3);
+                    phone = cellStr(row, 4);
+                    nationality = cellStr(row, 5);
+                    visaGrade = cellStr(row, 6);
+                    visaExp = cellDate(row, 7);
+                    eduDate = cellDate(row, 8);
+                    fixedStr = cellStr(row, 9);
+                    memo = cellStr(row, 10);
+                } catch (RuntimeException e) {
+                    errors.add(rowNo + "행: 셀 형식 오류 — " + msg(e) + " (건너뜀)");
+                    continue;
+                }
+
+                // 2) 필수값/유형/중복 사전검증 — 모두 DB 미변경 continue
+                if (!StringUtils.hasText(nameKo) || birth == null || !StringUtils.hasText(phone)) {
+                    errors.add(rowNo + "행: 한국이름·생년월일·연락처는 필수입니다 (건너뜀)");
+                    continue;
+                }
+                WorkerType type = parseType(typeStr);
+                if (type == null) {
+                    errors.add(rowNo + "행: 유형은 '외국인' 또는 '한국인'만 가능합니다 (건너뜀)");
+                    continue;
+                }
+                String normPhone = digitsOnly(phone);
+                if (workerRepository.existsByNameKoAndBirthDateAndPhoneAndDeletedAtIsNull(nameKo, birth, normPhone)) {
+                    skipped++;
+                    errors.add(rowNo + "행: 이미 등록된 근로자(" + nameKo + ") (건너뜀)");
+                    continue;
+                }
+
+                // 3) 저장(유효행만) — 여기부터는 예상 예외 없음. 이례적 오류는 배치 전체 롤백.
+                WorkerForm form = new WorkerForm();
+                form.setWorkerType(type);
+                form.setNameKo(nameKo);
+                form.setNameForeign(nameForeign);
+                form.setBirthDate(birth);
+                form.setPhone(phone);
+                form.setNationality(nationality);
+                form.setVisaGrade(visaGrade);
+                form.setVisaExpireDate(visaExp);
+                form.setEduCompleteDate(eduDate);
+                form.setFixed(parseYn(fixedStr));
+                form.setMemo(memo);
+                Worker saved = create(form);
+                created++;
+
+                // 4) 계좌 최대 3세트(은행+계좌번호가 모두 있는 것만)
+                for (int g = 0; g < 3; g++) {
+                    int base = 11 + g * 3;
+                    String bank = cellStr(row, base);
+                    String holder = cellStr(row, base + 1);
+                    String number = cellStr(row, base + 2);
+                    if (!StringUtils.hasText(bank) && !StringUtils.hasText(number)) {
+                        continue;
+                    }
+                    if (!StringUtils.hasText(bank) || !StringUtils.hasText(number)) {
+                        errors.add(rowNo + "행: 계좌" + (g + 1) + " 은행·계좌번호가 불완전 (해당 계좌 생략)");
+                        continue;
+                    }
+                    AccountForm af = new AccountForm();
+                    af.setBankName(bank);
+                    af.setAccountNumber(number);
+                    af.setAccountHolder(StringUtils.hasText(holder) ? holder : nameKo);
+                    addAccount(saved.getId(), af);
+                }
+            }
+        } catch (IOException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "엑셀을 읽을 수 없습니다(.xlsx 형식인지 확인하세요)");
+        }
+        return new ImportResult(total, created, skipped, errors);
+    }
+
+    // "외국인"/"FOREIGN" → FOREIGN, "한국인"/"KOREAN" → KOREAN, 그 외 null
+    private WorkerType parseType(String s) {
+        if (!StringUtils.hasText(s)) {
+            return null;
+        }
+        String v = s.trim().toUpperCase();
+        if (v.contains("외국") || v.startsWith("F")) {
+            return WorkerType.FOREIGN;
+        }
+        if (v.contains("한국") || v.startsWith("K")) {
+            return WorkerType.KOREAN;
+        }
+        return null;
+    }
+
+    // Y/예/1/true → true
+    private boolean parseYn(String s) {
+        if (!StringUtils.hasText(s)) {
+            return false;
+        }
+        String v = s.trim().toLowerCase();
+        return v.equals("y") || v.equals("yes") || v.equals("예") || v.equals("1") || v.equals("true") || v.equals("o");
+    }
+
+    // 행 전체가 빈 셀인지
+    private boolean isBlankRow(Row row) {
+        for (int c = 0; c < IMPORT_HEADERS.length; c++) {
+            if (StringUtils.hasText(cellStr(row, c))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // 셀을 문자열로(숫자는 정수면 소수점 없이, 날짜서식은 yyyy-MM-dd). 빈값이면 null.
+    private String cellStr(Row row, int col) {
+        Cell cell = row.getCell(col);
+        if (cell == null) {
+            return null;
+        }
+        String out;
+        switch (cell.getCellType()) {
+            case STRING -> out = cell.getStringCellValue();
+            case BOOLEAN -> out = String.valueOf(cell.getBooleanCellValue());
+            case NUMERIC -> {
+                if (DateUtil.isCellDateFormatted(cell)) {
+                    out = cell.getLocalDateTimeCellValue().toLocalDate().toString();
+                } else {
+                    double d = cell.getNumericCellValue();
+                    out = (d == Math.rint(d)) ? String.valueOf((long) d) : String.valueOf(d);
+                }
+            }
+            case FORMULA -> {
+                try {
+                    out = cell.getStringCellValue();
+                } catch (IllegalStateException e) {
+                    out = String.valueOf(cell.getNumericCellValue());
+                }
+            }
+            default -> out = null;
+        }
+        if (out == null) {
+            return null;
+        }
+        out = out.trim();
+        return out.isEmpty() ? null : out;
+    }
+
+    // 셀을 LocalDate로. 날짜서식 셀 또는 YYYY-MM-DD/./ 구분 텍스트 허용. 빈값 null. 형식오류 시 예외.
+    private LocalDate cellDate(Row row, int col) {
+        Cell cell = row.getCell(col);
+        if (cell == null) {
+            return null;
+        }
+        if (cell.getCellType() == CellType.NUMERIC && DateUtil.isCellDateFormatted(cell)) {
+            return cell.getLocalDateTimeCellValue().toLocalDate();
+        }
+        String s = cellStr(row, col);
+        if (s == null) {
+            return null;
+        }
+        String norm = s.replace('.', '-').replace('/', '-').replaceAll("-+$", "").trim();
+        try {
+            return LocalDate.parse(norm);
+        } catch (RuntimeException e) {
+            throw new IllegalArgumentException("날짜는 YYYY-MM-DD 형식으로 입력하세요: '" + s + "'");
+        }
+    }
+
+    // 예외 메시지 축약
+    private String msg(Throwable e) {
+        return e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
     }
 }

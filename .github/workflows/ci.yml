@@ -31,7 +31,6 @@ jobs:
       - name: Build and Test
         timeout-minutes: 18        # docker build 단계 상한 — 행 시 이 스텝만 자동 취소
         run: docker build --target ci .
-
-      - name: Prune dangling images
-        if: always()
-        run: docker image prune -f
+      # 주의: `docker image prune -f`는 레거시 빌더에서 빌드 캐시(dangling 이미지)를 통째로 지워
+      #   매 실행을 콜드로 만들고, 이미지가 쌓이면 멈추기까지 한다. 그래서 매 실행 정리는 하지 않는다.
+      #   디스크 정리는 별도(수동 `docker system prune -af` 또는 주기 배치)로 수행한다.

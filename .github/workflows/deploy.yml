@@ -38,7 +38,5 @@ jobs:
 
       - name: Run new container
         run: docker-compose -f /Users/bsy1343/dev/home-server/docker-compose.yml up -d jw-gasul
-
-      - name: Prune dangling images
-        if: always()
-        run: docker image prune -f
+      # 이미지 정리(prune)는 빌드 캐시를 지우고 백로그가 쌓이면 멈추므로 배포 경로에서 제외한다.
+      # 디스크 정리는 별도(수동 `docker system prune -af` 또는 주기 배치)로 수행한다.

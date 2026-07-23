@@ -86,8 +86,9 @@ com.jwgasul
 
 ## API Endpoints / Entry Points
 
-- 화면 라우팅(PRD 5장): `/login`, `/`(대시보드), `/workers`, `/workers/new`, `/workers/{id}`, `/sites`, `/roster/*`, `/audit`, `/files/**`(인증 필수 이미지 서빙).
+- 화면 라우팅(PRD 5장): `/login`, `/`(대시보드), `/workers`, `/workers/new`, `/workers/import`(엑셀 일괄등록: `GET` 폼·`POST` 처리·`GET /workers/import/template` 템플릿 다운로드), `/workers/{id}`, `/sites`, `/roster/*`, `/audit`, `/files/**`(인증 필수 이미지 서빙).
 - `permitAll`: `/login`, `/css/**`, `/js/**`, `/images/**`, `/favicon.ico`. 나머지 인증 요구(`SecurityConfig`).
+- 공통 네비(`fragments/layout :: nav`): 대시보드·근로자·현장·명부·감사 로그. **상단 고정(sticky)** — 앵커 이동(`#photos`·`#accounts`)은 `scroll-mt-28`로 고정 네비 높이만큼 오프셋.
 
 ## Important Notes
 
@@ -123,6 +124,9 @@ com.jwgasul
   - ✅ Stage 7 (명부 엑셀 출력 A/B/C 모드 — 사진 썸네일·주계좌, C모드 계좌반출 감사) · 샘플 근로자 50명
   - ✅ Stage 8 (대시보드 — 만료 요약·현장/명부 현황)
   - ✅ Stage 9 (감사 로그 F-12 — 근로자/계좌/서류 diff 기록, /audit 조회 화면 필터·페이지네이션, 근로자 상세 변경이력, 보관정리 배치 `AuditRetentionJob` @Profile("!test"))
-  - **다음: Stage 10 (반응형 최종 정리 · Tailwind 정식 빌드 · 배포 파이프라인 · 백업)**
+  - ✅ Stage 10 (Tailwind 정식 빌드 — standalone CLI · 대시보드 도넛/비율막대 시각화 · 백업 스크립트 · UX 보완)
+  - ✅ 추가 UX: 생년월일 텍스트 직접입력(자동 하이픈, 달력 팝업 제거) · 사진/계좌 처리 후 해당 섹션 앵커 유지(#photos·#accounts) · 근로자 엑셀 일괄등록(명단+계좌, 템플릿 다운로드·행별 검증/중복스킵, 사진은 미포함)
+- **Tailwind 정식 빌드(★ CDN 아님)**: `src/main/css/app.css`(@import "tailwindcss" + @source 템플릿/JS) → **standalone CLI 바이너리**(`build.gradle.kts` `tailwindBuild` 태스크, v4.3.3)로 컴파일 → `build/generated-resources/static/css/app.css` → jar `/static/css/app.css`. `layout.html`은 `<link rel=stylesheet href=/css/app.css>`. `processResources`가 `tailwindBuild` 의존. **새 유틸리티 클래스 추가 시 자동 재스캔**(빌드만 하면 반영). Node/npm 불필요. `TAILWIND_BIN` 환경변수로 바이너리 경로 주입 시 다운로드 스킵(Docker 캐싱용). DaisyUI는 미도입(코드가 유틸리티 클래스 기반).
+- **백업**(`scripts/backup.sh`, PRD 6): prod PG `pg_dump`(gzip) + 업로드 디렉터리 tar, 홈서버 로컬만 보관(기본 30일 보관), 외부 반출 금지(반출 시 gpg 필수). cron 예시 스크립트 주석 참조.
 - **감사 대상**: WORKER(생성/수정 필드 diff/삭제) · ACCOUNT(생성/수정/삭제/주계좌지정/전체보기 VIEW) · DOCUMENT(업로드/교체/삭제, entityId=workerId) · ROSTER(C모드 엑셀 계좌반출 VIEW). 근로자 상세 이력은 WORKER+DOCUMENT를 workerId로 함께 조회.
-- **미완료(향후)**: Tailwind+DaisyUI 정식 빌드(현재 브라우저 CDN 임시), 배포 파이프라인 마무리·백업 정책, 로그인 잠금 지속시간·저장소 확정.
+- **미완료(향후)**: 엑셀 일괄 **사진** 업로드(스프레드시트 행 매핑 불안정 → ZIP+파일명 키 방식 별도 설계 예정) · 배포 compose 비root/prod 전환 마무리 · 로그인 잠금 지속시간·저장소 확정.

@@ -11,7 +11,23 @@
         });
     }
 
+    // 날짜 텍스트 입력 자동 하이픈: 숫자만 입력해도 YYYY-MM-DD로 정리(달력 팝업 없이 직접 편집)
+    function bindDateAutoFormat(input) {
+        input.addEventListener('input', function () {
+            var digits = input.value.replace(/\D/g, '').slice(0, 8);
+            var out = digits;
+            if (digits.length > 6) {
+                out = digits.slice(0, 4) + '-' + digits.slice(4, 6) + '-' + digits.slice(6);
+            } else if (digits.length > 4) {
+                out = digits.slice(0, 4) + '-' + digits.slice(4);
+            }
+            input.value = out;
+        });
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('input[data-date-input]').forEach(bindDateAutoFormat);
+
         var radios = document.querySelectorAll('input[name="workerType"]');
         if (radios.length === 0) {
             return;

@@ -5,14 +5,19 @@ import com.jwgasul.common.exception.DuplicateWorkerException;
 import com.jwgasul.domain.DocType;
 import com.jwgasul.domain.Worker;
 import com.jwgasul.dto.AccountForm;
+import com.jwgasul.dto.ImportResult;
 import com.jwgasul.dto.WorkerFilter;
 import com.jwgasul.dto.WorkerForm;
 import com.jwgasul.service.AuditService;
 import com.jwgasul.service.WorkerService;
 import jakarta.validation.Valid;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -49,6 +54,34 @@ public class WorkerController {
         model.addAttribute("q", filter.getQ());
         model.addAttribute("summary", workerService.expirySummary());
         return "workers/list";
+    }
+
+    // 엑셀 일괄등록 화면(안내 + 업로드 폼). 처리 결과가 있으면 함께 표시.
+    @GetMapping("/workers/import")
+    public String importForm() {
+        return "workers/import";
+    }
+
+    // 엑셀 업로드 처리 → 결과(생성/스킵/행오류)를 플래시로 전달 후 화면 재표시
+    @PostMapping("/workers/import")
+    public String importExcel(@RequestParam("file") MultipartFile file, RedirectAttributes ra) {
+        ImportResult result = workerService.importExcel(file);
+        ra.addFlashAttribute("result", result);
+        ra.addFlashAttribute("message",
+                "일괄등록 완료 — 신규 " + result.created() + "건, 건너뜀 " + result.skipped() + "건");
+        return "redirect:/workers/import";
+    }
+
+    // 일괄등록 엑셀 템플릿 다운로드
+    @GetMapping("/workers/import/template")
+    public ResponseEntity<ByteArrayResource> importTemplate() {
+        byte[] xlsx = workerService.buildImportTemplate();
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"worker-import-template.xlsx\"")
+                .body(new ByteArrayResource(xlsx));
     }
 
     // 등록 폼(유형 선택 → 동적 필드)
@@ -137,7 +170,7 @@ public class WorkerController {
             RedirectAttributes ra) {
         workerService.uploadDocument(id, docType, file);
         ra.addFlashAttribute("message", docType.getLabel() + " 업로드 완료");
-        return "redirect:/workers/" + id;
+        return "redirect:/workers/" + id + "#photos";
     }
 
     // 서류 슬롯 삭제
@@ -148,7 +181,7 @@ public class WorkerController {
             RedirectAttributes ra) {
         workerService.deleteDocument(id, docType);
         ra.addFlashAttribute("message", docType.getLabel() + " 삭제됨");
-        return "redirect:/workers/" + id;
+        return "redirect:/workers/" + id + "#photos";
     }
 
     // ===== 계좌 (F-09) — 근로자 상세 화면 내 =====
@@ -160,7 +193,7 @@ public class WorkerController {
                              BindingResult binding, RedirectAttributes ra) {
         if (binding.hasErrors()) {
             ra.addFlashAttribute("message", binding.getFieldErrors().get(0).getDefaultMessage());
-            return "redirect:/workers/" + id;
+            return "redirect:/workers/" + id + "#accounts";
         }
         try {
             workerService.addAccount(id, form);
@@ -168,7 +201,7 @@ public class WorkerController {
         } catch (ResponseStatusException e) {
             ra.addFlashAttribute("message", e.getReason());
         }
-        return "redirect:/workers/" + id;
+        return "redirect:/workers/" + id + "#accounts";
     }
 
     // 계좌 수정
@@ -178,11 +211,11 @@ public class WorkerController {
                                 BindingResult binding, RedirectAttributes ra) {
         if (binding.hasErrors()) {
             ra.addFlashAttribute("message", binding.getFieldErrors().get(0).getDefaultMessage());
-            return "redirect:/workers/" + id;
+            return "redirect:/workers/" + id + "#accounts";
         }
         workerService.updateAccount(id, accountId, form);
         ra.addFlashAttribute("message", "계좌가 수정되었습니다");
-        return "redirect:/workers/" + id;
+        return "redirect:/workers/" + id + "#accounts";
     }
 
     // 계좌 삭제
@@ -190,7 +223,7 @@ public class WorkerController {
     public String deleteAccount(@PathVariable Long id, @PathVariable Long accountId, RedirectAttributes ra) {
         workerService.deleteAccount(id, accountId);
         ra.addFlashAttribute("message", "계좌가 삭제되었습니다");
-        return "redirect:/workers/" + id;
+        return "redirect:/workers/" + id + "#accounts";
     }
 
     // 주계좌 지정
@@ -198,7 +231,7 @@ public class WorkerController {
     public String setPrimaryAccount(@PathVariable Long id, @PathVariable Long accountId, RedirectAttributes ra) {
         workerService.setPrimaryAccount(id, accountId);
         ra.addFlashAttribute("message", "주계좌로 지정되었습니다");
-        return "redirect:/workers/" + id;
+        return "redirect:/workers/" + id + "#accounts";
     }
 
     // 계좌번호 전체 노출(하이픈 제외 숫자) — 클릭 시 호출, 감사 로그(VIEW) 기록. JS가 표시/복사에 사용.
