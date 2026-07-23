@@ -4,14 +4,13 @@ package com.jwgasul.controller;
 import com.jwgasul.common.exception.DuplicateWorkerException;
 import com.jwgasul.domain.DocType;
 import com.jwgasul.domain.Worker;
-import com.jwgasul.domain.WorkerType;
 import com.jwgasul.dto.AccountForm;
+import com.jwgasul.dto.WorkerFilter;
 import com.jwgasul.dto.WorkerForm;
 import com.jwgasul.service.WorkerService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -35,18 +34,16 @@ public class WorkerController {
         this.workerService = workerService;
     }
 
-    // 목록: 전체/외국인/한국인 탭 + 이름·연락처 검색, 비자만료일 오름차순 기본(F-03)
+    // 목록: 전체/외국인/한국인 탭 + 검색 + 세부 필터. 고정 우선→비자만료 오름차순 정렬(F-03)
     @GetMapping("/workers")
-    public String list(
-            @RequestParam(name = "type", required = false) WorkerType type,
-            @RequestParam(name = "q", required = false) String q,
-            @PageableDefault(size = 20, sort = "visaExpireDate", direction = Sort.Direction.ASC) Pageable pageable,
-            Model model) {
-        Page<Worker> page = workerService.list(type, q, pageable);
+    public String list(@ModelAttribute WorkerFilter filter,
+                       @PageableDefault(size = 20) Pageable pageable, Model model) {
+        Page<Worker> page = workerService.list(filter, pageable);
         model.addAttribute("page", page);
         model.addAttribute("workers", page.getContent());
-        model.addAttribute("type", type);
-        model.addAttribute("q", q);
+        model.addAttribute("filter", filter);
+        model.addAttribute("type", filter.getType());   // 템플릿 탭/링크 호환
+        model.addAttribute("q", filter.getQ());
         model.addAttribute("summary", workerService.expirySummary());
         return "workers/list";
     }

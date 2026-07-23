@@ -36,12 +36,46 @@
            class="shrink-0 px-4 py-2 border-b-2 -mb-px text-sm hover:text-slate-800">한국인</a>
     </div>
 
-    <!-- 검색 (모바일 전체폭) -->
-    <form th:action="@{/workers}" method="get" class="mt-4 flex gap-2">
+    <!-- 검색 + 세부 필터 (모바일 전체폭) -->
+    <form th:action="@{/workers}" method="get" class="mt-4 space-y-3">
         <input type="hidden" name="type" th:if="${type != null}" th:value="${type.name()}">
-        <input type="text" name="q" th:value="${q}" placeholder="이름 또는 연락처 검색"
-               class="flex-1 sm:flex-none sm:w-64 rounded-md border border-slate-300 px-3 py-2.5 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
-        <button type="submit" class="shrink-0 rounded-md bg-slate-200 text-slate-700 text-sm px-4 py-2.5 hover:bg-slate-300">검색</button>
+        <div class="flex gap-2">
+            <input type="text" name="q" th:value="${filter.q}" placeholder="이름 또는 연락처 검색"
+                   class="flex-1 rounded-md border border-slate-300 px-3 py-2.5 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
+            <button type="submit" class="shrink-0 rounded-md bg-slate-800 text-white text-sm px-4 py-2.5 hover:bg-slate-700">검색</button>
+        </div>
+        <details class="bg-white rounded-lg border border-slate-200" th:open="${filter.hasDetailFilter()}">
+            <summary class="cursor-pointer select-none px-4 py-2.5 text-sm text-slate-600">필터</summary>
+            <div class="px-4 pb-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <label class="block">
+                    <span class="block text-xs font-medium text-slate-500 mb-1">비자 상태</span>
+                    <select name="visa" class="w-full rounded-md border border-slate-300 px-3 py-2.5 text-base sm:text-sm">
+                        <option value="">전체</option>
+                        <option value="EXPIRED" th:selected="${filter.visa == 'EXPIRED'}">만료</option>
+                        <option value="IMMINENT" th:selected="${filter.visa == 'IMMINENT'}">임박(D-7)</option>
+                    </select>
+                </label>
+                <label class="block">
+                    <span class="block text-xs font-medium text-slate-500 mb-1">교육 상태</span>
+                    <select name="edu" class="w-full rounded-md border border-slate-300 px-3 py-2.5 text-base sm:text-sm">
+                        <option value="">전체</option>
+                        <option value="EXPIRED" th:selected="${filter.edu == 'EXPIRED'}">만료</option>
+                        <option value="IMMINENT" th:selected="${filter.edu == 'IMMINENT'}">임박(D-7)</option>
+                        <option value="UNREGISTERED" th:selected="${filter.edu == 'UNREGISTERED'}">미등록</option>
+                    </select>
+                </label>
+                <div class="sm:col-span-2 flex flex-wrap gap-4 text-sm text-slate-700">
+                    <label class="flex items-center gap-2"><input type="checkbox" name="fixed" value="true" th:checked="${filter.fixed}"> 고정만</label>
+                    <label class="flex items-center gap-2"><input type="checkbox" name="missingDoc" value="true" th:checked="${filter.missingDoc}"> 서류 미비</label>
+                    <label class="flex items-center gap-2"><input type="checkbox" name="noAccount" value="true" th:checked="${filter.noAccount}"> 계좌 미등록</label>
+                </div>
+                <div class="sm:col-span-2 flex gap-2">
+                    <button type="submit" class="rounded-md bg-slate-800 text-white text-sm px-4 py-2 hover:bg-slate-700">적용</button>
+                    <a th:href="@{/workers(type=${type != null ? type.name() : null})}"
+                       class="rounded-md bg-slate-100 text-slate-600 text-sm px-4 py-2 hover:bg-slate-200">초기화</a>
+                </div>
+            </div>
+        </details>
     </form>
 
     <!-- ===== 모바일: 카드 목록 (md 미만) ===== -->
@@ -121,11 +155,11 @@
         <span>총 <span th:text="${page.totalElements}">0</span>명</span>
         <div class="flex items-center gap-2">
             <a th:if="${!page.first}"
-               th:href="@{/workers(type=${type != null ? type.name() : null}, q=${q}, page=${page.number - 1})}"
+               th:href="@{/workers(type=${type != null ? type.name() : null}, q=${filter.q}, visa=${filter.visa}, edu=${filter.edu}, fixed=${filter.fixed}, missingDoc=${filter.missingDoc}, noAccount=${filter.noAccount}, page=${page.number - 1})}"
                class="px-4 py-2 rounded-md bg-slate-200 hover:bg-slate-300">이전</a>
             <span th:text="${page.number + 1} + ' / ' + ${page.totalPages}">1 / 1</span>
             <a th:if="${!page.last}"
-               th:href="@{/workers(type=${type != null ? type.name() : null}, q=${q}, page=${page.number + 1})}"
+               th:href="@{/workers(type=${type != null ? type.name() : null}, q=${filter.q}, visa=${filter.visa}, edu=${filter.edu}, fixed=${filter.fixed}, missingDoc=${filter.missingDoc}, noAccount=${filter.noAccount}, page=${page.number + 1})}"
                class="px-4 py-2 rounded-md bg-slate-200 hover:bg-slate-300">다음</a>
         </div>
     </div>

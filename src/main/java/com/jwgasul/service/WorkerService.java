@@ -13,6 +13,7 @@ import com.jwgasul.domain.WorkerType;
 import com.jwgasul.dto.AccountForm;
 import com.jwgasul.dto.AccountView;
 import com.jwgasul.dto.ExpirySummary;
+import com.jwgasul.dto.WorkerFilter;
 import com.jwgasul.dto.WorkerForm;
 import java.time.LocalDate;
 import com.jwgasul.repository.WorkerAccountRepository;
@@ -76,21 +77,65 @@ public class WorkerService {
     // 근로자 CRUD
     // ============================================================
 
-    // 목록 조회(유형 탭 + 이름/연락처 검색). 동적 조건은 Specification으로 조합한다.
+    // 목록 조회(유형 탭 + 검색 + 세부 필터). 동적 조건은 Specification으로 조합한다(F-03).
     @Transactional(readOnly = true)
-    public Page<Worker> list(WorkerType type, String keyword, Pageable pageable) {
-        String kw = StringUtils.hasText(keyword) ? keyword.trim() : null;
+    public Page<Worker> list(WorkerFilter f, Pageable pageable) {
+        LocalDate today = LocalDate.now();
+        LocalDate limit = today.plusDays(ExpiryStatus.IMMINENT_DAYS);
+
         Specification<Worker> spec = notDeleted();
-        if (type != null) {
-            spec = spec.and(hasType(type));
+        if (f.getType() != null) {
+            spec = spec.and(hasType(f.getType()));
         }
-        if (kw != null) {
-            spec = spec.and(matchesKeyword(kw));
+        if (StringUtils.hasText(f.getQ())) {
+            spec = spec.and(matchesKeyword(f.getQ().trim()));
         }
+        if ("EXPIRED".equals(f.getVisa())) {
+            spec = spec.and((r, q, cb) -> cb.lessThan(r.get("visaExpireDate"), today));
+        } else if ("IMMINENT".equals(f.getVisa())) {
+            spec = spec.and((r, q, cb) -> cb.between(r.get("visaExpireDate"), today, limit));
+        }
+        if ("EXPIRED".equals(f.getEdu())) {
+            spec = spec.and((r, q, cb) -> cb.lessThan(r.get("eduExpireDate"), today));
+        } else if ("IMMINENT".equals(f.getEdu())) {
+            spec = spec.and((r, q, cb) -> cb.between(r.get("eduExpireDate"), today, limit));
+        } else if ("UNREGISTERED".equals(f.getEdu())) {
+            spec = spec.and((r, q, cb) -> cb.isNull(r.get("eduExpireDate")));
+        }
+        if (Boolean.TRUE.equals(f.getFixed())) {
+            spec = spec.and((r, q, cb) -> cb.isTrue(r.get("fixed")));
+        }
+        if (Boolean.TRUE.equals(f.getMissingDoc())) {
+            spec = spec.and(docCountLessThan(3));
+        }
+        if (Boolean.TRUE.equals(f.getNoAccount())) {
+            spec = spec.and(accountCountIsZero());
+        }
+
         // 정렬 고정: 고정 인원 우선(내림차순) → 비자만료일 오름차순(9999-12-31은 후순위로 밀림)
         Pageable sorted = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(),
                 Sort.by(Sort.Order.desc("fixed"), Sort.Order.asc("visaExpireDate")));
         return workerRepository.findAll(spec, sorted);
+    }
+
+    // 서류가 n개 미만(서류 미비) — 상관 서브쿼리
+    private Specification<Worker> docCountLessThan(long n) {
+        return (root, query, cb) -> {
+            var sub = query.subquery(Long.class);
+            var d = sub.from(WorkerDocument.class);
+            sub.select(cb.count(d)).where(cb.equal(d.get("workerId"), root.get("id")));
+            return cb.lessThan(sub, n);
+        };
+    }
+
+    // 계좌가 0개(계좌 미등록) — 상관 서브쿼리
+    private Specification<Worker> accountCountIsZero() {
+        return (root, query, cb) -> {
+            var sub = query.subquery(Long.class);
+            var a = sub.from(WorkerAccount.class);
+            sub.select(cb.count(a)).where(cb.equal(a.get("workerId"), root.get("id")));
+            return cb.equal(sub, 0L);
+        };
     }
 
     // 목록 상단 요약 배지용 만료/임박 집계(F-04)
