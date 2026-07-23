@@ -22,8 +22,10 @@ import com.jwgasul.repository.WorkerRepository;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -186,15 +188,20 @@ public class WorkerService {
         }
         Worker worker = new Worker();
         applyForm(worker, form, phone);
-        return workerRepository.save(worker);
+        Worker saved = workerRepository.save(worker);
+        auditService.log("WORKER", saved.getId(), "CREATE");
+        return saved;
     }
 
-    // 기존 근로자 수정.
+    // 기존 근로자 수정. 변경 필드별 감사 diff 기록(F-12).
     @Transactional
     public Worker update(Long id, WorkerForm form) {
         Worker worker = getActive(id);
+        Map<String, String> before = snapshot(worker);
         applyForm(worker, form, normalizePhone(form.getPhone()));
-        return workerRepository.save(worker);
+        Worker saved = workerRepository.save(worker);
+        logWorkerDiff(id, before, snapshot(saved));
+        return saved;
     }
 
     // soft delete(명부 이력 보존)
@@ -203,6 +210,39 @@ public class WorkerService {
         Worker worker = getActive(id);
         worker.markDeleted(Instant.now());
         workerRepository.save(worker);
+        auditService.log("WORKER", id, "DELETE");
+    }
+
+    // 감사 diff용 필드 스냅샷(한글 라벨)
+    private Map<String, String> snapshot(Worker w) {
+        Map<String, String> m = new LinkedHashMap<>();
+        m.put("유형", String.valueOf(w.getWorkerType()));
+        m.put("한국이름", nz(w.getNameKo()));
+        m.put("외국이름", nz(w.getNameForeign()));
+        m.put("생년월일", String.valueOf(w.getBirthDate()));
+        m.put("연락처", nz(w.getPhone()));
+        m.put("국적", nz(w.getNationality()));
+        m.put("비자등급", nz(w.getVisaGrade()));
+        m.put("비자만료", String.valueOf(w.getVisaExpireDate()));
+        m.put("교육이수", String.valueOf(w.getEduCompleteDate()));
+        m.put("고정", String.valueOf(w.isFixed()));
+        m.put("비고", nz(w.getMemo()));
+        return m;
+    }
+
+    // 변경된 필드마다 감사 로그 1건
+    private void logWorkerDiff(Long id, Map<String, String> before, Map<String, String> after) {
+        for (String k : before.keySet()) {
+            String o = before.get(k);
+            String n = after.get(k);
+            if (!Objects.equals(o, n)) {
+                auditService.log("WORKER", id, "UPDATE", k, o, n);
+            }
+        }
+    }
+
+    private String nz(String s) {
+        return s == null ? "" : s;
     }
 
     // 수정 폼 채우기용 — 엔티티를 폼 DTO로 변환
@@ -291,13 +331,17 @@ public class WorkerService {
         StorageService.StoredFile stored = storageService.store(workerId, docType.name(), file);
 
         WorkerDocument doc = documentRepository.findByWorkerIdAndDocType(workerId, docType).orElse(null);
-        if (doc == null) {
+        boolean isNew = (doc == null);
+        if (isNew) {
             doc = new WorkerDocument(workerId, docType, stored.relativePath(), stored.originalName(), stored.size());
         } else {
             storageService.delete(doc.getFilePath()); // 이전 파일 제거
             doc.replace(stored.relativePath(), stored.originalName(), stored.size());
         }
-        return documentRepository.save(doc);
+        WorkerDocument saved = documentRepository.save(doc);
+        // 감사: 서류는 근로자 단위 이력에 함께 보이도록 entityId=workerId, 슬롯명을 변경필드로
+        auditService.log("DOCUMENT", workerId, isNew ? "CREATE" : "UPDATE", docType.getLabel(), null, null);
+        return saved;
     }
 
     // 슬롯의 서류를 삭제한다(파일 + 레코드)
@@ -306,6 +350,7 @@ public class WorkerService {
         documentRepository.findByWorkerIdAndDocType(workerId, docType).ifPresent(doc -> {
             storageService.delete(doc.getFilePath());
             documentRepository.delete(doc);
+            auditService.log("DOCUMENT", workerId, "DELETE", docType.getLabel(), null, null);
         });
     }
 

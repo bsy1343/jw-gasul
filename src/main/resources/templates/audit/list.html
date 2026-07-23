@@ -1,0 +1,166 @@
+<!-- audit/list.html — 감사 로그 조회(F-12): 기간·사용자·대상 필터 + 페이지네이션. 모바일 카드 + 데스크톱 표. -->
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('감사 로그 · 재원가설 인원관리')}"></head>
+<body class="min-h-screen bg-slate-100">
+<nav th:replace="~{fragments/layout :: nav('audit')}"></nav>
+<div th:replace="~{fragments/layout :: flash}"></div>
+
+<!-- 대상/동작 한글 라벨 프래그먼트 -->
+<th:block th:fragment="entityLabel(t)" th:switch="${t}">
+    <span th:case="'WORKER'">근로자</span>
+    <span th:case="'ACCOUNT'">계좌</span>
+    <span th:case="'DOCUMENT'">서류</span>
+    <span th:case="'SITE'">현장</span>
+    <span th:case="'ROSTER'">명부</span>
+    <span th:case="*" th:text="${t}">기타</span>
+</th:block>
+
+<main class="max-w-6xl mx-auto px-3 sm:px-4 py-5 sm:py-8">
+    <h1 class="text-xl sm:text-2xl font-semibold text-slate-800">감사 로그</h1>
+    <p class="mt-1 text-sm text-slate-500">인적사항·계좌·서류 등 민감정보 변경/조회 이력(F-12). 최신순.</p>
+
+    <!-- 필터 -->
+    <form th:action="@{/audit}" method="get"
+          class="mt-4 bg-white rounded-lg border border-slate-200 p-3.5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+        <div>
+            <label class="block text-xs text-slate-500 mb-1">시작일</label>
+            <input type="date" name="from" th:value="${filter.from}"
+                   class="w-full rounded-md border border-slate-300 px-3 py-2.5 text-base sm:text-sm">
+        </div>
+        <div>
+            <label class="block text-xs text-slate-500 mb-1">종료일</label>
+            <input type="date" name="to" th:value="${filter.to}"
+                   class="w-full rounded-md border border-slate-300 px-3 py-2.5 text-base sm:text-sm">
+        </div>
+        <div>
+            <label class="block text-xs text-slate-500 mb-1">사용자</label>
+            <input type="text" name="username" th:value="${filter.username}" placeholder="아이디"
+                   class="w-full rounded-md border border-slate-300 px-3 py-2.5 text-base sm:text-sm">
+        </div>
+        <div>
+            <label class="block text-xs text-slate-500 mb-1">대상</label>
+            <select name="entityType"
+                    class="w-full rounded-md border border-slate-300 px-3 py-2.5 text-base sm:text-sm">
+                <option value="">전체</option>
+                <option th:each="et : ${entityTypes}" th:value="${et}" th:selected="${et == filter.entityType}"
+                        th:switch="${et}">
+                    <th:block th:case="'WORKER'">근로자</th:block>
+                    <th:block th:case="'ACCOUNT'">계좌</th:block>
+                    <th:block th:case="'DOCUMENT'">서류</th:block>
+                    <th:block th:case="'SITE'">현장</th:block>
+                    <th:block th:case="'ROSTER'">명부</th:block>
+                    <th:block th:case="*" th:text="${et}">기타</th:block>
+                </option>
+            </select>
+        </div>
+        <div class="flex items-end gap-2">
+            <button type="submit"
+                    class="flex-1 rounded-md bg-slate-800 text-white text-sm font-medium px-4 py-2.5 hover:bg-slate-700 transition">조회</button>
+            <a th:href="@{/audit}"
+               class="rounded-md border border-slate-300 text-slate-600 text-sm px-4 py-2.5 hover:bg-slate-50 transition">초기화</a>
+        </div>
+    </form>
+
+    <p class="mt-3 text-xs text-slate-500">총 <span th:text="${logs.totalElements}">0</span>건</p>
+
+    <!-- 모바일 카드 -->
+    <div class="mt-2 space-y-2 md:hidden">
+        <div th:each="log : ${logs.content}" class="bg-white rounded-lg border border-slate-200 p-3.5">
+            <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2 min-w-0">
+                    <span th:switch="${log.action}" class="shrink-0 text-xs px-1.5 py-0.5 rounded font-medium">
+                        <span th:case="'CREATE'" class="text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">등록</span>
+                        <span th:case="'UPDATE'" class="text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">수정</span>
+                        <span th:case="'DELETE'" class="text-red-600 bg-red-50 px-1.5 py-0.5 rounded">삭제</span>
+                        <span th:case="'VIEW'" class="text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">조회</span>
+                        <span th:case="*" class="text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded" th:text="${log.action}">-</span>
+                    </span>
+                    <span class="text-sm font-medium text-slate-800 truncate">
+                        <th:block th:replace="~{audit/list :: entityLabel(${log.entityType})}"></th:block>
+                        <span class="text-slate-400" th:if="${log.entityId != null}" th:text="'#' + ${log.entityId}">#1</span>
+                    </span>
+                </div>
+                <span class="shrink-0 text-xs text-slate-400" th:text="${#temporals.format(log.createdAt, 'MM-dd HH:mm')}">07-23 10:00</span>
+            </div>
+            <div th:if="${log.changedField != null}" class="mt-1.5 text-sm text-slate-600">
+                <span class="text-slate-500" th:text="${log.changedField}">필드</span>:
+                <span th:if="${log.oldValue != null or log.newValue != null}">
+                    <span class="text-red-500 line-through" th:text="${log.oldValue} ?: '∅'">이전</span>
+                    <span class="text-slate-400">→</span>
+                    <span class="text-emerald-600" th:text="${log.newValue} ?: '∅'">이후</span>
+                </span>
+            </div>
+            <div class="mt-1.5 flex items-center gap-3 text-xs text-slate-400">
+                <span th:text="${log.username} ?: '(시스템)'">admin</span>
+                <span th:if="${log.ipAddress}" th:text="${log.ipAddress}">1.2.3.4</span>
+            </div>
+        </div>
+        <div th:if="${logs.isEmpty()}" class="bg-white rounded-lg border border-slate-200 p-10 text-center text-slate-400">기록이 없습니다</div>
+    </div>
+
+    <!-- 데스크톱 표 -->
+    <div class="mt-2 hidden md:block overflow-x-auto bg-white rounded-lg border border-slate-200">
+        <table class="w-full text-sm">
+            <thead class="bg-slate-50 text-slate-500 text-left">
+            <tr>
+                <th class="px-3 py-2 font-medium whitespace-nowrap">일시</th>
+                <th class="px-3 py-2 font-medium">동작</th>
+                <th class="px-3 py-2 font-medium">대상</th>
+                <th class="px-3 py-2 font-medium">변경 내용</th>
+                <th class="px-3 py-2 font-medium">사용자</th>
+                <th class="px-3 py-2 font-medium">IP</th>
+            </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+            <tr th:each="log : ${logs.content}" class="hover:bg-slate-50 align-top">
+                <td class="px-3 py-2 text-slate-500 whitespace-nowrap" th:text="${#temporals.format(log.createdAt, 'yyyy-MM-dd HH:mm:ss')}">2026-07-23 10:00:00</td>
+                <td class="px-3 py-2">
+                    <span th:switch="${log.action}">
+                        <span th:case="'CREATE'" class="text-xs px-2 py-0.5 rounded bg-emerald-50 text-emerald-600">등록</span>
+                        <span th:case="'UPDATE'" class="text-xs px-2 py-0.5 rounded bg-blue-50 text-blue-600">수정</span>
+                        <span th:case="'DELETE'" class="text-xs px-2 py-0.5 rounded bg-red-50 text-red-600">삭제</span>
+                        <span th:case="'VIEW'" class="text-xs px-2 py-0.5 rounded bg-amber-50 text-amber-600">조회</span>
+                        <span th:case="*" class="text-xs px-2 py-0.5 rounded bg-slate-100 text-slate-600" th:text="${log.action}">-</span>
+                    </span>
+                </td>
+                <td class="px-3 py-2 text-slate-700 whitespace-nowrap">
+                    <th:block th:replace="~{audit/list :: entityLabel(${log.entityType})}"></th:block>
+                    <span class="text-slate-400" th:if="${log.entityId != null}" th:text="'#' + ${log.entityId}">#1</span>
+                </td>
+                <td class="px-3 py-2 text-slate-600">
+                    <span th:if="${log.changedField != null}">
+                        <span class="text-slate-500" th:text="${log.changedField}">필드</span>
+                        <span th:if="${log.oldValue != null or log.newValue != null}">:
+                            <span class="text-red-500 line-through" th:text="${log.oldValue} ?: '∅'">이전</span>
+                            <span class="text-slate-400">→</span>
+                            <span class="text-emerald-600" th:text="${log.newValue} ?: '∅'">이후</span>
+                        </span>
+                    </span>
+                    <span th:unless="${log.changedField != null}" class="text-slate-300">-</span>
+                </td>
+                <td class="px-3 py-2 text-slate-600" th:text="${log.username} ?: '(시스템)'">admin</td>
+                <td class="px-3 py-2 text-slate-400" th:text="${log.ipAddress} ?: '-'">-</td>
+            </tr>
+            <tr th:if="${logs.isEmpty()}">
+                <td colspan="6" class="px-3 py-10 text-center text-slate-400">기록이 없습니다</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 페이지네이션 -->
+    <div th:if="${logs.totalPages > 1}" class="mt-4 flex items-center justify-center gap-2 text-sm">
+        <a th:if="${!logs.first}"
+           th:href="@{/audit(page=${logs.number - 1}, from=${filter.from}, to=${filter.to}, username=${filter.username}, entityType=${filter.entityType})}"
+           class="rounded-md border border-slate-300 px-3 py-2 text-slate-600 hover:bg-white transition">이전</a>
+        <span class="px-2 text-slate-500">
+            <span th:text="${logs.number + 1}">1</span> / <span th:text="${logs.totalPages}">1</span>
+        </span>
+        <a th:if="${!logs.last}"
+           th:href="@{/audit(page=${logs.number + 1}, from=${filter.from}, to=${filter.to}, username=${filter.username}, entityType=${filter.entityType})}"
+           class="rounded-md border border-slate-300 px-3 py-2 text-slate-600 hover:bg-white transition">다음</a>
+    </div>
+</main>
+</body>
+</html>

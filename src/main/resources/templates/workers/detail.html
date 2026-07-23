@@ -197,6 +197,39 @@
         <p th:unless="${accounts.size() < 3}" class="mt-3 text-xs text-slate-400">계좌는 최대 3개까지 등록됩니다.</p>
     </section>
 
+    <!-- 변경 이력 (F-12) — 이 근로자·서류의 감사 로그 최신순 -->
+    <section class="mt-6 bg-white rounded-xl border border-slate-200 p-4 sm:p-6">
+        <h2 class="text-lg font-semibold text-slate-800">변경 이력</h2>
+        <ol class="mt-3 space-y-2.5">
+            <li th:each="log : ${history}" class="flex items-start gap-3 text-sm">
+                <span class="shrink-0 mt-0.5" th:switch="${log.action}">
+                    <span th:case="'CREATE'" class="text-xs px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-600">등록</span>
+                    <span th:case="'UPDATE'" class="text-xs px-1.5 py-0.5 rounded bg-blue-50 text-blue-600">수정</span>
+                    <span th:case="'DELETE'" class="text-xs px-1.5 py-0.5 rounded bg-red-50 text-red-600">삭제</span>
+                    <span th:case="'VIEW'" class="text-xs px-1.5 py-0.5 rounded bg-amber-50 text-amber-600">조회</span>
+                    <span th:case="*" class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-600" th:text="${log.action}">-</span>
+                </span>
+                <div class="min-w-0 flex-1">
+                    <div class="text-slate-700">
+                        <span th:if="${log.entityType == 'DOCUMENT'}" class="text-slate-400">[서류] </span>
+                        <span th:if="${log.changedField != null}" th:text="${log.changedField}">필드</span>
+                        <span th:if="${log.changedField != null and (log.oldValue != null or log.newValue != null)}">
+                            <span class="text-red-500 line-through" th:text="${log.oldValue} ?: '∅'">이전</span>
+                            <span class="text-slate-400">→</span>
+                            <span class="text-emerald-600" th:text="${log.newValue} ?: '∅'">이후</span>
+                        </span>
+                        <span th:if="${log.changedField == null}" class="text-slate-400">기본 정보</span>
+                    </div>
+                    <div class="mt-0.5 text-xs text-slate-400">
+                        <span th:text="${#temporals.format(log.createdAt, 'yyyy-MM-dd HH:mm')}">2026-07-23 10:00</span>
+                        · <span th:text="${log.username} ?: '(시스템)'">admin</span>
+                    </div>
+                </div>
+            </li>
+        </ol>
+        <p th:if="${history == null or history.isEmpty()}" class="text-sm text-slate-400 py-2">기록이 없습니다.</p>
+    </section>
+
     <!-- 위험 구역: 삭제 -->
     <section class="mt-6 bg-white rounded-xl border border-red-200 p-6">
         <h2 class="text-sm font-semibold text-red-600">근로자 삭제</h2>

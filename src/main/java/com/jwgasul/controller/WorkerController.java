@@ -7,6 +7,7 @@ import com.jwgasul.domain.Worker;
 import com.jwgasul.dto.AccountForm;
 import com.jwgasul.dto.WorkerFilter;
 import com.jwgasul.dto.WorkerForm;
+import com.jwgasul.service.AuditService;
 import com.jwgasul.service.WorkerService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
@@ -29,9 +30,11 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class WorkerController {
 
     private final WorkerService workerService;
+    private final AuditService auditService;
 
-    public WorkerController(WorkerService workerService) {
+    public WorkerController(WorkerService workerService, AuditService auditService) {
         this.workerService = workerService;
+        this.auditService = auditService;
     }
 
     // 목록: 전체/외국인/한국인 탭 + 검색 + 세부 필터. 고정 우선→비자만료 오름차순 정렬(F-03)
@@ -94,6 +97,7 @@ public class WorkerController {
         if (!model.containsAttribute("accountForm")) {
             model.addAttribute("accountForm", new AccountForm());
         }
+        model.addAttribute("history", auditService.workerHistory(id));
         return "workers/detail";
     }
 

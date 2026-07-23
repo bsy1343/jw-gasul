@@ -60,6 +60,9 @@ app:
   roster:
     # 한 명부당 인원 상한 — 엑셀 메모리 보호(F-08)
     max-members: 100
+  audit:
+    # 감사 로그 보관 기간(일). 경과분은 매일 새벽 배치로 정리(F-12). prod에서만 동작.
+    retention-days: 365
   upload:
     # 업로드 파일 저장 루트(웹 루트 외부). 운영에서는 Docker Volume 경로로 주입.
     dir: ${UPLOAD_DIR:./data/uploads}

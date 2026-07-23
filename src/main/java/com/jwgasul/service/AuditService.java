@@ -3,10 +3,16 @@
 package com.jwgasul.service;
 
 import com.jwgasul.domain.AuditLog;
+import com.jwgasul.dto.AuditFilter;
 import com.jwgasul.repository.AuditLogRepository;
 import jakarta.servlet.http.HttpServletRequest;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -47,6 +53,39 @@ public class AuditService {
     @Transactional(readOnly = true)
     public List<AuditLog> history(String entityType, Long entityId) {
         return auditLogRepository.findByEntityTypeAndEntityIdOrderByCreatedAtDesc(entityType, entityId);
+    }
+
+    // 근로자 상세 변경 이력(근로자 본인 + 그 인원의 서류 변경)
+    @Transactional(readOnly = true)
+    public List<AuditLog> workerHistory(Long workerId) {
+        return auditLogRepository.findByEntityTypeInAndEntityIdOrderByCreatedAtDesc(List.of("WORKER", "DOCUMENT"), workerId);
+    }
+
+    // 감사 로그 조회(F-12): 기간·사용자·대상 필터
+    @Transactional(readOnly = true)
+    public Page<AuditLog> search(AuditFilter f, Pageable pageable) {
+        Specification<AuditLog> spec = (r, q, cb) -> cb.conjunction();
+        if (f.getFrom() != null) {
+            Instant start = f.getFrom().atStartOfDay(ZoneId.systemDefault()).toInstant();
+            spec = spec.and((r, q, cb) -> cb.greaterThanOrEqualTo(r.get("createdAt"), start));
+        }
+        if (f.getTo() != null) {
+            Instant end = f.getTo().plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
+            spec = spec.and((r, q, cb) -> cb.lessThan(r.get("createdAt"), end));
+        }
+        if (f.getUsername() != null) {
+            spec = spec.and((r, q, cb) -> cb.equal(r.get("username"), f.getUsername()));
+        }
+        if (f.getEntityType() != null) {
+            spec = spec.and((r, q, cb) -> cb.equal(r.get("entityType"), f.getEntityType()));
+        }
+        return auditLogRepository.findAll(spec, pageable);
+    }
+
+    // 보관 기간(1년) 경과 로그 정리(F-12) — 배치에서 호출
+    @Transactional
+    public long purgeOlderThan(Instant cutoff) {
+        return auditLogRepository.deleteByCreatedAtBefore(cutoff);
     }
 
     // 현재 로그인 사용자명(없으면 null)
