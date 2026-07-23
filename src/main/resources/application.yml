@@ -1,0 +1,99 @@
+# application.yml — 애플리케이션 공통 설정
+# 기본(default) 프로필은 로컬 개발용(compose.yaml의 PostgreSQL)에 맞춰져 있고,
+# 운영(prod) 프로필은 하단에서 환경변수로 접속 정보를 주입한다.
+spring:
+  application:
+    name: jw-gasul
+
+  # 기본 프로필은 test — 임베디드 PostgreSQL로 외부 서버 없이 바로 실행(SCAFFOLD).
+  # 운영 배포 시 SPRING_PROFILES_ACTIVE=prod 로 전환한다.
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:test}
+
+  datasource:
+    # prod 프로필에서 사용하는 실 DB 접속 정보(test 프로필은 임베디드 PG 빈이 대체).
+    # 운영에서는 환경변수(DB_URL 등)로 덮어쓴다.
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/jwgasul}
+    username: ${DB_USERNAME:jwgasul}
+    password: ${DB_PASSWORD:jwgasul}
+
+  jpa:
+    # 스키마는 Flyway가 소유한다. JPA는 검증만 수행(엔티티↔테이블 매핑 불일치 조기 발견).
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        default_schema: jwgasul
+        format_sql: true
+
+  flyway:
+    enabled: true
+    schemas: jwgasul
+    default-schema: jwgasul
+    create-schemas: true
+    locations: classpath:db/migration
+
+  thymeleaf:
+    cache: false
+
+  servlet:
+    multipart:
+      # 사진 슬롯당 최대 10MB(F-02). 3종 동시 업로드를 고려해 요청 전체는 여유를 둔다.
+      max-file-size: 10MB
+      max-request-size: 60MB
+
+server:
+  port: ${SERVER_PORT:8080}
+  # Cloudflare Tunnel/Nginx 프록시 뒤에서 실제 클라이언트 정보를 복원하기 위해 forward 헤더를 신뢰한다.
+  forward-headers-strategy: framework
+
+# 애플리케이션 커스텀 설정(6.5 주요 설정 항목)
+app:
+  edu:
+    # 교육 듣기 링크 업체 코드(F-10)
+    ent-code: "4178131976"
+    # 교육 유효기간(년) — 이수일 + 이 값으로 만료일 자동 계산(3.1)
+    valid-years:
+      foreign: 2
+      korean: 2
+  roster:
+    # 한 명부당 인원 상한 — 엑셀 메모리 보호(F-08)
+    max-members: 100
+  upload:
+    # 업로드 파일 저장 루트(웹 루트 외부). 운영에서는 Docker Volume 경로로 주입.
+    dir: ${UPLOAD_DIR:./data/uploads}
+  security:
+    login:
+      # username 기준 로그인 실패 잠금(F-01)
+      max-attempts: 5
+      lock-minutes: 10
+    # 실제 클라이언트 IP 복원에 신뢰할 헤더(F-01)
+    trusted-header: CF-Connecting-IP
+  # 초기 관리자 계정 seed(개발 편의). 운영에서는 반드시 환경변수로 교체한다.
+  seed:
+    admin:
+      username: ${SEED_ADMIN_USERNAME:admin}
+      password: ${SEED_ADMIN_PASSWORD:admin}
+      display-name: ${SEED_ADMIN_DISPLAY_NAME:관리자}
+
+logging:
+  level:
+    com.jwgasul: DEBUG
+
+---
+# 운영(prod) 프로필 — 접속 정보는 반드시 환경변수로 주입한다.
+spring:
+  config:
+    activate:
+      on-profile: prod
+  thymeleaf:
+    cache: true
+  jpa:
+    properties:
+      hibernate:
+        format_sql: false
+
+logging:
+  level:
+    com.jwgasul: INFO

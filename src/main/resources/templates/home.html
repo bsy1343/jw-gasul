@@ -1,0 +1,17 @@
+<!-- home.html — 대시보드 자리표시자(F-11은 Stage 8에서 구현). 로그인 확인용 -->
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('대시보드 · 재원가설 인원관리')}"></head>
+<body class="min-h-screen bg-slate-100">
+<nav th:replace="~{fragments/layout :: nav('home')}"></nav>
+<main class="max-w-6xl mx-auto px-4 py-10">
+    <h1 class="text-2xl font-semibold text-slate-800">대시보드</h1>
+    <p class="mt-2 text-slate-600">
+        <span class="font-medium" th:text="${username}">사용자</span>님, 환영합니다.
+    </p>
+    <div class="mt-6 rounded-xl border border-dashed border-slate-300 bg-white p-8 text-slate-500">
+        스캐폴딩(Stage 1) 완료. 근로자·현장·명부·대시보드 화면은 이후 단계에서 구현됩니다.
+    </div>
+</main>
+</body>
+</html>

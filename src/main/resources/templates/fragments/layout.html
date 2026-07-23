@@ -1,0 +1,40 @@
+<!-- layout.html — 공통 head/네비/플래시 프래그먼트. Tailwind v4 브라우저 CDN 사용(정식 빌드는 이후 단계) -->
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="head(title)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${title}">재원가설 인원관리</title>
+    <!-- TODO: 프론트엔드 빌드 단계에서 Tailwind 4 + DaisyUI 5 정식 빌드로 교체 -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body>
+<!-- 상단 네비게이션 프래그먼트(인증 후 화면 공용). active로 현재 메뉴 강조 -->
+<nav th:fragment="nav(active)" class="bg-slate-800 text-white">
+    <div class="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
+        <div class="flex items-center gap-6">
+            <a th:href="@{/}" class="font-semibold tracking-tight">재원가설 인원관리</a>
+            <div class="flex items-center gap-1 text-sm">
+                <a th:href="@{/}" th:classappend="${active == 'home'} ? 'bg-slate-700' : ''"
+                   class="px-3 py-1.5 rounded-md hover:bg-slate-700 transition">대시보드</a>
+                <a th:href="@{/workers}" th:classappend="${active == 'workers'} ? 'bg-slate-700' : ''"
+                   class="px-3 py-1.5 rounded-md hover:bg-slate-700 transition">근로자</a>
+                <span class="px-3 py-1.5 rounded-md text-slate-500 cursor-not-allowed" title="이후 단계">현장</span>
+                <span class="px-3 py-1.5 rounded-md text-slate-500 cursor-not-allowed" title="이후 단계">명부</span>
+            </div>
+        </div>
+        <form th:action="@{/logout}" method="post" class="m-0">
+            <button type="submit"
+                    class="text-sm px-3 py-1.5 rounded-md bg-slate-700 hover:bg-slate-600 transition">로그아웃</button>
+        </form>
+    </div>
+</nav>
+
+<!-- 플래시 메시지 프래그먼트 -->
+<div th:fragment="flash" th:if="${message}"
+     class="max-w-6xl mx-auto px-4 mt-4">
+    <div class="rounded-md bg-emerald-50 text-emerald-700 text-sm px-4 py-2 border border-emerald-200"
+         th:text="${message}">완료</div>
+</div>
+</body>
+</html>

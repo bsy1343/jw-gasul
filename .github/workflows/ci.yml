@@ -1,0 +1,28 @@
+# CI — 모든 브랜치 push 시 Docker 내부에서 빌드 + 테스트
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: [main]
+
+env:
+  DOCKER_HOST: unix:///var/run/docker.sock
+  PATH: /Users/bsy1343/.orbstack/bin:/usr/local/bin:/usr/bin:/bin
+  DOCKER_CONFIG: /tmp/.docker-ci
+
+jobs:
+  build-and-test:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Disable Docker keychain
+        run: mkdir -p "$DOCKER_CONFIG" && echo '{}' > "$DOCKER_CONFIG/config.json"
+
+      - name: Build and Test
+        run: docker build --target ci .
+
+      - name: Prune dangling images
+        run: docker image prune -f

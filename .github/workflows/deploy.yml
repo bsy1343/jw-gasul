@@ -1,0 +1,29 @@
+# Deploy — main 브랜치 push 시 맥미니에 컨테이너 배포
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+env:
+  DOCKER_HOST: unix:///var/run/docker.sock
+  PATH: /Users/bsy1343/.orbstack/bin:/usr/local/bin:/usr/bin:/bin
+  DOCKER_CONFIG: /tmp/.docker-ci
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build -t jw-gasul .
+
+      - name: Stop old container
+        run: docker rm -f jw-gasul || true
+
+      - name: Run new container
+        run: docker-compose -f /Users/bsy1343/dev/home-server/docker-compose.yml up -d jw-gasul
+
+      - name: Prune dangling images
+        run: docker image prune -f
