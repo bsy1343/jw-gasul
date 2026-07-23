@@ -102,8 +102,10 @@ class AccountFlowTest {
         mockMvc.perform(post("/workers/" + id + "/accounts/" + secondId + "/primary").with(csrf()))
                 .andExpect(status().is3xxRedirection());
 
+        // 주계좌는 정확히 1개이고, 방금 지정한 계좌이며, 목록 최상단에 온다
         var after = workerService.accounts(id);
-        assertEquals(false, after.get(0).primary());
-        assertEquals(true, after.get(1).primary());
+        assertEquals(1, after.stream().filter(a -> a.primary()).count());
+        assertEquals(secondId, after.get(0).id());
+        assertEquals(true, after.get(0).primary());
     }
 }

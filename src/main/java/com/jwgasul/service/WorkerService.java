@@ -26,7 +26,9 @@ import java.util.Map;
 import java.util.Set;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -85,7 +87,10 @@ public class WorkerService {
         if (kw != null) {
             spec = spec.and(matchesKeyword(kw));
         }
-        return workerRepository.findAll(spec, pageable);
+        // 정렬 고정: 고정 인원 우선(내림차순) → 비자만료일 오름차순(9999-12-31은 후순위로 밀림)
+        Pageable sorted = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(),
+                Sort.by(Sort.Order.desc("fixed"), Sort.Order.asc("visaExpireDate")));
+        return workerRepository.findAll(spec, sorted);
     }
 
     // 목록 상단 요약 배지용 만료/임박 집계(F-04)
@@ -282,7 +287,7 @@ public class WorkerService {
     @Transactional(readOnly = true)
     public List<AccountView> accounts(Long workerId) {
         List<AccountView> views = new ArrayList<>();
-        for (WorkerAccount a : accountRepository.findByWorkerIdOrderBySortOrderAsc(workerId)) {
+        for (WorkerAccount a : accountRepository.findByWorkerIdOrderByPrimaryDescSortOrderAsc(workerId)) {
             views.add(toView(a));
         }
         return views;
