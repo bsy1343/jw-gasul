@@ -30,7 +30,7 @@ jobs:
 
       - name: Build and Test
         timeout-minutes: 15        # docker build 단계 상한 — 행 시 이 스텝만 자동 취소
-        run: docker build --target ci --progress=plain .
+        run: docker build --target ci .
 
       - name: Prune dangling images
         if: always()

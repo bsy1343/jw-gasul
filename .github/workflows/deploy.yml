@@ -31,7 +31,7 @@ jobs:
 
       - name: Build image
         timeout-minutes: 15
-        run: docker build -t jw-gasul --progress=plain .
+        run: docker build -t jw-gasul .
 
       - name: Stop old container
         run: docker rm -f jw-gasul || true
