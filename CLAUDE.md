@@ -106,6 +106,7 @@ com.jwgasul
 - **Apache POI 버전 수동 관리**(Boot BOM 미관리). `poi-ooxml:5.3.0`.
 - **앱 아이콘**: 원본은 `static/images/favicon.svg`(비계 프레임 모티프, slate-800 + teal-400). PNG/ICO는 **`scripts/gen-icon.py`가 생성**(외부 라이브러리 없이 SDF 렌더링 → 16/32/48 ICO + 180/192/512 PNG). 색·형태를 바꾸면 **SVG와 스크립트 상수를 같이 고치고 재생성**한다: `python3 scripts/gen-icon.py src/main/resources/static/images && mv -f .../images/favicon.ico .../static/favicon.ico`. 16px 이하는 대각 가새를 뺀 단순화 기하(`SEGMENTS_SMALL`)로 그린다.
 - **홈 화면 추가(PWA-lite)**: `static/images/site.webmanifest` + `apple-touch-icon`(180px) + `theme-color`. 아이콘/매니페스트는 `/images/**`·`/favicon.ico`라 `SecurityConfig` 수정 없이 비인증 접근 가능(로그인 화면에서도 아이콘 표시).
+- **메신저 링크 미리보기(Open Graph)**: `layout :: head`에 `og:*`/`twitter:card`, 카드 이미지는 `images/og-image.png`(1200x630, gen-icon.py가 생성). **절대 URL이 필수**라 도메인을 하드코딩하지 않고 `BaseUrlAdvice`(@ControllerAdvice)가 요청에서 복원한 `baseUrl`을 쓴다 — `forward-headers-strategy: framework` 덕에 Cloudflare Tunnel 뒤에서도 `https://도메인`으로 나온다. **og:title/description은 화면별 title이 아닌 고정 문구**(채팅방에 내부 화면명 노출 방지). 크롤러가 읽는 건 로그인 화면(`/login` permitAll)이라 데이터는 노출되지 않는다. 검색 색인은 `robots noindex`로 차단(robots.txt는 두지 않음 — 두면 카카오 스크랩까지 막힘).
 - 계좌번호·신분증은 민감정보. 화면 마스킹 + 접근 감사 로그(F-12) 우회 금지. 계좌 전체 노출·계좌 포함 엑셀 반출은 반드시 `audit_log`에 기록.
 
 ## Operational Decisions

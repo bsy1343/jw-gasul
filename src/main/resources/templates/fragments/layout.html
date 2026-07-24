@@ -13,6 +13,20 @@
     <!-- 모바일 주소창/상태바 색상을 네비 배경과 맞춘다 -->
     <meta name="theme-color" content="#1e293b">
     <meta name="apple-mobile-web-app-title" content="재원가설">
+    <!-- 메신저(카카오톡 등) 링크 미리보기 카드. 절대 URL이 필요해 baseUrl(BaseUrlAdvice)로 조립한다.
+         제목/설명은 화면별 title이 아니라 고정 문구 — 채팅방에 '근로자 상세' 같은 내부 화면명을 흘리지 않기 위함. -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="재원가설 인원관리">
+    <meta property="og:title" content="재원가설 인원관리">
+    <meta property="og:description" content="비계 시공 근로자 인적사항·현장 명부 관리">
+    <meta property="og:locale" content="ko_KR">
+    <meta property="og:url" th:content="${baseUrl}">
+    <meta property="og:image" th:content="${baseUrl} + '/images/og-image.png'">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta name="twitter:card" content="summary_large_image">
+    <!-- 사내 전용 → 검색엔진 색인 금지(메신저 미리보기는 robots.txt를 안 두므로 정상 동작) -->
+    <meta name="robots" content="noindex, nofollow">
     <!-- Tailwind 4 브라우저 CDN. Docker 빌드에서 CSS 컴파일/다운로드 없음 → 콜드 빌드 경량. -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 </head>

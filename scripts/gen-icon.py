@@ -88,8 +88,8 @@ def render(size):
     return rows
 
 
-def png_bytes(rows, size):
-    """RGBA 행 배열을 PNG 바이트로 인코딩"""
+def png_bytes(rows, width, height=None):
+    """RGBA 행 배열을 PNG 바이트로 인코딩(정사각이면 height 생략 가능)"""
     raw = b"".join(b"\x00" + r for r in rows)
 
     def chunk(tag, data):
@@ -97,9 +97,36 @@ def png_bytes(rows, size):
         return c + struct.pack(">I", zlib.crc32(tag + data) & 0xFFFFFFFF)
 
     return (b"\x89PNG\r\n\x1a\n"
-            + chunk(b"IHDR", struct.pack(">IIBBBBB", size, size, 8, 6, 0, 0, 0))
+            + chunk(b"IHDR", struct.pack(">IIBBBBB", width, height or width, 8, 6, 0, 0, 0))
             + chunk(b"IDAT", zlib.compress(raw, 9))
             + chunk(b"IEND", b""))
+
+
+# 메신저 링크 미리보기(Open Graph) 카드 이미지 규격 — 1200x630이 사실상 표준
+OG_W, OG_H, OG_MARK = 1200, 630, 384
+OG_BG = (15, 23, 42)    # slate-900 — 아이콘 배경(slate-800)보다 어둡게 깔아 대비를 준다
+
+
+def render_og():
+    """OG 카드 이미지: 어두운 배경 중앙에 앱 아이콘을 얹은 1200x630 RGBA 행 배열"""
+    mark = render(OG_MARK)
+    ox, oy = (OG_W - OG_MARK) // 2, (OG_H - OG_MARK) // 2
+    rows = []
+    for y in range(OG_H):
+        row = bytearray()
+        for x in range(OG_W):
+            r, g, b = OG_BG
+            if oy <= y < oy + OG_MARK and ox <= x < ox + OG_MARK:
+                i = (x - ox) * 4
+                src = mark[y - oy]
+                a = src[i + 3]
+                if a:  # 아이콘 알파로 배경 위에 합성
+                    r = (src[i] * a + r * (255 - a)) // 255
+                    g = (src[i + 1] * a + g * (255 - a)) // 255
+                    b = (src[i + 2] * a + b * (255 - a)) // 255
+            row += bytes((r, g, b, 255))
+        rows.append(bytes(row))
+    return rows
 
 
 def ico_bytes(entries):
@@ -126,4 +153,7 @@ if __name__ == "__main__":
             f.write(pngs[s])
     with open(f"{out}/favicon.ico", "wb") as f:
         f.write(ico_bytes([(s, pngs[s]) for s in (16, 32, 48)]))
+    with open(f"{out}/og-image.png", "wb") as f:
+        f.write(png_bytes(render_og(), OG_W, OG_H))
+    print(f"rendered og-image {OG_W}x{OG_H}")
     print("done")
