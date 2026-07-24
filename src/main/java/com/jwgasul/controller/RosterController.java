@@ -147,12 +147,19 @@ public class RosterController {
                        @RequestParam(name = "workerIds", required = false) List<Long> workerIds,
                        Principal principal, RedirectAttributes ra) {
         try {
+            // 같은 현장·날짜 명부가 이미 있으면 저장하지 않고 기존 명부를 보여준다
+            Optional<Roster> dup = rosterService.findDuplicate(criteria);
+            if (dup.isPresent()) {
+                ra.addFlashAttribute("error", "같은 현장·같은 날짜의 명부가 이미 있습니다 ("
+                        + dup.get().getTitle() + " · " + dup.get().getTargetDate() + "). 아래 기존 명부를 확인하세요.");
+                return "redirect:/roster/" + dup.get().getId();
+            }
             String createdBy = principal != null ? principal.getName() : null;
             Roster saved = rosterService.save(rosterType, criteria, workerIds, createdBy);
             ra.addFlashAttribute("message", "명부가 저장되었습니다");
             return "redirect:/roster/" + saved.getId();
         } catch (ResponseStatusException e) {
-            ra.addFlashAttribute("message", e.getReason());
+            ra.addFlashAttribute("error", e.getReason());
             return "redirect:/roster/random";
         }
     }

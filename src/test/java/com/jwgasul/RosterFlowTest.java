@@ -3,6 +3,7 @@ package com.jwgasul;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -30,6 +31,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.server.ResponseStatusException;
 
 @ActiveProfiles("test")
 @SpringBootTest
@@ -124,6 +126,28 @@ class RosterFlowTest {
                         .param("targetDate", LocalDate.now().toString())
                         .param("workerIds", w.getId().toString()))
                 .andExpect(status().is3xxRedirection());
+    }
+
+    // 같은 현장·같은 날짜로 명부를 두 번 저장하면 차단된다(중복 방지)
+    @Test
+    void sameSiteAndDateIsRejected() {
+        SiteForm sf = new SiteForm();
+        sf.setName("중복체크현장-" + SEQ.incrementAndGet());
+        Site site = siteService.create(sf);
+
+        RosterCriteria c = new RosterCriteria();
+        c.setSiteId(site.getId());
+        c.setTargetDate(LocalDate.now());
+        rosterService.save(RosterType.MANUAL, c, List.of(createKorean(false).getId()), "tester");
+
+        Long otherWorkerId = createKorean(false).getId();
+        assertThrows(ResponseStatusException.class,
+                () -> rosterService.save(RosterType.MANUAL, c, List.of(otherWorkerId), "tester"));
+
+        // 날짜가 다르면 정상 저장된다
+        c.setTargetDate(LocalDate.now().plusDays(1));
+        assertEquals(site.getId(),
+                rosterService.save(RosterType.MANUAL, c, List.of(otherWorkerId), "tester").getSiteId());
     }
 
     // 명부 이력이 있는 현장은 삭제가 차단된다(F-05)

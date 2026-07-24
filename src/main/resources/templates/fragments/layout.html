@@ -56,11 +56,13 @@
     </div>
 </nav>
 
-<!-- 플래시 메시지 프래그먼트 -->
-<div th:fragment="flash" th:if="${message}"
-     class="max-w-6xl mx-auto px-3 sm:px-4 mt-4">
-    <div class="rounded-md bg-emerald-50 text-emerald-700 text-sm px-4 py-2.5 border border-emerald-200"
+<!-- 플래시 메시지 프래그먼트. message=완료(초록) / error=실패·차단(빨강) -->
+<div th:fragment="flash" th:if="${message != null or error != null}"
+     class="max-w-6xl mx-auto px-3 sm:px-4 mt-4 space-y-2">
+    <div th:if="${message}" class="rounded-md bg-emerald-50 text-emerald-700 text-sm px-4 py-2.5 border border-emerald-200"
          th:text="${message}">완료</div>
+    <div th:if="${error}" class="rounded-md bg-red-50 text-red-700 text-sm px-4 py-2.5 border border-red-200"
+         th:text="${error}">오류</div>
 </div>
 
 <!-- 만료 상태 배지 프래그먼트(F-04): status=ExpiryStatus, dday=Long -->

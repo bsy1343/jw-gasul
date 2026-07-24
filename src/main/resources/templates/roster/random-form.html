@@ -46,7 +46,9 @@
         <div>
             <span class="block text-sm font-medium text-slate-700 mb-1">대상</span>
             <div class="flex flex-wrap gap-4 text-sm">
-                <label class="flex items-center gap-2"><input type="radio" th:field="*{type}" value=""> 전체</label>
+                <!-- 전체는 type=null이라 th:field로는 선택 표시가 안 된다 → name/checked를 직접 지정 -->
+                <label class="flex items-center gap-2"><input type="radio" name="type" value=""
+                                                              th:checked="${criteria.type == null}"> 전체</label>
                 <label class="flex items-center gap-2"><input type="radio" th:field="*{type}" value="FOREIGN"> 외국인</label>
                 <label class="flex items-center gap-2"><input type="radio" th:field="*{type}" value="KOREAN"> 한국인</label>
             </div>

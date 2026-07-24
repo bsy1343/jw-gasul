@@ -161,6 +161,11 @@ public class RosterService {
                     "한 명부 최대 " + maxMembers + "명까지입니다. 나눠서 생성하세요.");
         }
         String title = resolveTitle(c);
+        // 같은 현장·같은 날짜 중복 저장 차단(같은 날 같은 현장에 명부가 두 벌 생기는 것을 막는다)
+        findDuplicate(c).ifPresent(dup -> {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "같은 현장·같은 날짜의 명부가 이미 있습니다 (" + dup.getTitle() + " · " + dup.getTargetDate() + ")");
+        });
         Roster roster = rosterRepository.save(new Roster(c.getSiteId(), title, c.getTargetDate(), type, createdBy));
         for (Long wid : workerIds) {
             Worker w = workerRepository.findById(wid)
@@ -189,9 +194,21 @@ public class RosterService {
         return rosterRepository.findAllByOrderByCreatedAtDesc();
     }
 
+    // 현장 상세의 명부 이력 — 투입 날짜 오름차순(일정 순서대로 보이게)
     @Transactional(readOnly = true)
     public List<Roster> historyForSite(Long siteId) {
-        return rosterRepository.findBySiteIdOrderByCreatedAtDesc(siteId);
+        return rosterRepository.findBySiteIdOrderByTargetDateAscCreatedAtAsc(siteId);
+    }
+
+    // 같은 현장(현장 미선택이면 같은 임시 제목)·같은 날짜의 기존 명부. 없으면 empty.
+    @Transactional(readOnly = true)
+    public Optional<Roster> findDuplicate(RosterCriteria c) {
+        if (c.getTargetDate() == null) {
+            return Optional.empty();
+        }
+        return c.getSiteId() != null
+                ? rosterRepository.findFirstBySiteIdAndTargetDate(c.getSiteId(), c.getTargetDate())
+                : rosterRepository.findFirstBySiteIdIsNullAndTitleAndTargetDate(resolveTitle(c), c.getTargetDate());
     }
 
     @Transactional(readOnly = true)

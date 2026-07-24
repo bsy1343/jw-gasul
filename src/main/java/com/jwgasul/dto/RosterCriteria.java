@@ -21,10 +21,10 @@ public class RosterCriteria {
 
     private WorkerType type;          // 대상: 전체(null) / FOREIGN / KOREAN
 
-    // 제외 옵션(비자 만료자 제외는 기본 ON)
+    // 제외 옵션(비자 만료자·교육 만료자 제외는 기본 ON — 현장 투입 불가 인원이라 기본 배제)
     private boolean excludeVisaExpired = true;
     private boolean excludeVisaImminent;
-    private boolean excludeEduExpired;
+    private boolean excludeEduExpired = true;
     private boolean excludeMissingDoc;
 
     public Long getSiteId() {

@@ -48,7 +48,7 @@ class RosterExcelTest {
         Long wid = workerService.create(wf).getId();
 
         RosterCriteria c = new RosterCriteria();
-        c.setTitle("엑셀현장");
+        c.setTitle("엑셀현장" + n);   // 같은 제목·날짜 중복 저장은 차단되므로 테스트마다 다른 제목을 쓴다
         c.setTargetDate(LocalDate.now());
         return rosterService.save(RosterType.MANUAL, c, List.of(wid), "tester").getId();
     }
