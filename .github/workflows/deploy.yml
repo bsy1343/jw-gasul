@@ -20,9 +20,6 @@ jobs:
       - name: Build image
         run: docker build -t jw-gasul .
 
-      # `docker rm -f`는 이 호스트에서 반복적으로 굳어(크래시 재시작 루프·유령 컨테이너 상태)
-      # 배포를 멈추게 했다. 게다가 `|| true`는 "실패"만 무시할 뿐 "멈춤"은 막지 못한다.
-      # compose가 stop→remove→create를 하나의 관리된 작업으로 처리하므로 별도 삭제 스텝 없이 교체한다.
       - name: Deploy (recreate container)
         run: docker-compose -f /Users/bsy1343/dev/home-server/docker-compose.yml up -d --force-recreate jw-gasul
 
