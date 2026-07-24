@@ -28,5 +28,5 @@ RUN useradd -m -u 1001 appuser \
     && chown -R appuser:appuser /app
 COPY --from=build --chown=appuser:appuser /app/build/libs/*.jar app.jar
 USER appuser
-EXPOSE 8080
+EXPOSE 18084
 ENTRYPOINT ["java", "-jar", "app.jar"]
