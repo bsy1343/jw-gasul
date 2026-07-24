@@ -26,4 +26,8 @@ public interface RosterRepository extends JpaRepository<Roster, Long> {
 
     // 최근 생성 명부 5건(대시보드, F-11)
     List<Roster> findTop5ByOrderByCreatedAtDesc();
+
+    // 해당 현장의 기준일 이후 가장 가까운 명부(대시보드 '다음 명부', F-11)
+    Optional<Roster> findFirstBySiteIdAndTargetDateGreaterThanEqualOrderByTargetDateAsc(
+            Long siteId, LocalDate from);
 }

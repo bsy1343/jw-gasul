@@ -48,15 +48,38 @@
             </div>
         </a>
 
-        <!-- 진행 중 현장 -->
-        <a th:href="@{/sites(active=true)}"
-           class="bg-white rounded-2xl border border-slate-200 p-5 flex flex-col justify-center active:bg-slate-50">
-            <div class="flex items-center gap-2 text-xs text-slate-500">
-                <span class="inline-block w-2.5 h-2.5 rounded-full bg-green-500"></span>진행 중 현장
+        <!-- 진행 중 현장 + 다음 명부 일정(F-11). 명부가 임박한 현장이 위로 온다.
+             매일 먼저 확인하는 정보라 상단(모바일에서 도넛 바로 다음)에 둔다. -->
+        <section class="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5">
+            <div class="flex items-center justify-between gap-2">
+                <h2 class="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                    <span class="inline-block w-2.5 h-2.5 rounded-full bg-green-500"></span>진행 중 현장
+                    <span class="text-slate-400 font-normal" th:text="${dashboard.activeSiteCount}">0</span>
+                </h2>
+                <a th:href="@{/sites(active=true)}" class="shrink-0 text-xs text-slate-500 hover:text-slate-800 underline">전체</a>
             </div>
-            <div class="mt-2 text-4xl font-bold text-slate-800" th:text="${dashboard.activeSiteCount}">0</div>
-            <div class="mt-1 text-xs text-slate-400">현장 관리 바로가기 ›</div>
-        </a>
+            <div class="mt-3 space-y-2">
+                <a th:each="s : ${dashboard.activeSites}" th:href="@{/sites/{id}(id=${s.id})}"
+                   class="flex items-center justify-between gap-2 border border-slate-100 rounded-xl p-2.5 hover:bg-slate-50 active:bg-slate-50">
+                    <span class="min-w-0">
+                        <span class="block font-medium text-slate-800 truncate" th:text="${s.name}">현장명</span>
+                        <span class="block text-xs text-slate-500 mt-0.5">
+                            <!-- 오늘 명부가 잡힌 현장만 강조. 예정 없음은 경고가 아니라 회색 -->
+                            <span th:if="${s.rosterToday}"
+                                  class="px-1.5 py-0.5 rounded bg-teal-50 text-teal-700 font-medium"
+                                  th:text="${s.nextRosterLabel()}">오늘 명부</span>
+                            <span th:unless="${s.rosterToday}"
+                                  th:classappend="${s.nextRosterDate == null} ? 'text-slate-400' : 'text-slate-500'"
+                                  th:text="${s.nextRosterLabel()}">명부 예정 없음</span>
+                            <span th:if="${s.endDate != null}" class="text-slate-400"
+                                  th:text="' · ~' + ${s.endDate}"> · ~종료일</span>
+                        </span>
+                    </span>
+                    <span class="shrink-0 text-slate-300">›</span>
+                </a>
+                <p th:if="${dashboard.activeSites.isEmpty()}" class="text-sm text-slate-400 py-2">진행 중인 현장이 없습니다.</p>
+            </div>
+        </section>
     </div>
 
     <!-- 유효기간 현황: 비자·교육 비율 막대 -->
@@ -134,7 +157,7 @@
         </a>
     </div>
 
-    <div class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <div class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
         <!-- 만료·임박 인원 -->
         <section class="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5">
             <h2 class="text-base font-semibold text-slate-800">만료·임박 인원</h2>

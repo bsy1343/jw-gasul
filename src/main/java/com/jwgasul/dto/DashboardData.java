@@ -14,6 +14,7 @@ public record DashboardData(
         long missingDocCount,      // 서류 미비
         long noAccountCount,       // 계좌 미등록
         List<Worker> attention,    // 만료·임박 인원 리스트(바로가기)
-        List<Roster> recentRosters // 최근 명부 5건
+        List<Roster> recentRosters, // 최근 명부 5건
+        List<ActiveSiteView> activeSites // 진행 중 현장 + 다음 명부 일정(최대 5)
 ) {
 }
