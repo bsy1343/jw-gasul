@@ -11,4 +11,7 @@ public interface RosterMemberRepository extends JpaRepository<RosterMember, Long
     List<RosterMember> findByRosterId(Long rosterId);
 
     long countByRosterId(Long rosterId);
+
+    // 명부 삭제 시 구성원 스냅샷도 함께 제거(DB에도 ON DELETE CASCADE가 있지만 JPA 쪽에서 명시적으로 지운다)
+    long deleteByRosterId(Long rosterId);
 }

@@ -222,6 +222,18 @@ public class RosterService {
         return rosterMemberRepository.findByRosterId(rosterId);
     }
 
+    // 명부 삭제(잘못 만든 명부 정정용). 스냅샷 이력이 사라지므로 무엇을 지웠는지 감사 로그에 남긴다(F-12).
+    // 삭제 후에는 같은 현장·날짜로 다시 생성할 수 있다.
+    @Transactional
+    public void delete(Long id) {
+        Roster roster = get(id);
+        long memberCount = rosterMemberRepository.countByRosterId(id);
+        rosterMemberRepository.deleteByRosterId(id);
+        rosterRepository.delete(roster);
+        auditService.log("ROSTER", id, "DELETE", "명부",
+                roster.getTitle() + " · " + roster.getTargetDate() + " · " + memberCount + "명", null);
+    }
+
     // ============================================================
     // 엑셀 다운로드 (F-08) — A 기본 / B 사진 포함 / C 계좌 포함(송금용)
     // 인적사항은 스냅샷, 사진·계좌는 조회 시점 현재 worker_id 기준(3.6).

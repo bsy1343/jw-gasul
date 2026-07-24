@@ -79,6 +79,14 @@ public class RosterController {
                 .body(bytes);
     }
 
+    // 명부 삭제(잘못 만든 명부 정정). 삭제 내역은 감사 로그에 남는다(F-12).
+    @PostMapping("/roster/{id}/delete")
+    public String delete(@PathVariable Long id, RedirectAttributes ra) {
+        rosterService.delete(id);
+        ra.addFlashAttribute("message", "명부가 삭제되었습니다");
+        return "redirect:/roster";
+    }
+
     // ===== 랜덤 명부(F-06) =====
 
     // 생성 조건 입력 폼

@@ -18,6 +18,7 @@ import com.jwgasul.dto.RosterCriteria;
 import com.jwgasul.dto.SiteForm;
 import com.jwgasul.dto.WorkerForm;
 import com.jwgasul.domain.WorkerType;
+import com.jwgasul.service.AuditService;
 import com.jwgasul.service.RosterService;
 import com.jwgasul.service.SiteService;
 import com.jwgasul.service.WorkerService;
@@ -45,6 +46,7 @@ class RosterFlowTest {
     @Autowired private WorkerService workerService;
     @Autowired private SiteService siteService;
     @Autowired private RosterService rosterService;
+    @Autowired private AuditService auditService;
 
     private Worker createKorean(boolean fixed) {
         int n = SEQ.incrementAndGet();
@@ -148,6 +150,31 @@ class RosterFlowTest {
         c.setTargetDate(LocalDate.now().plusDays(1));
         assertEquals(site.getId(),
                 rosterService.save(RosterType.MANUAL, c, List.of(otherWorkerId), "tester").getSiteId());
+    }
+
+    // 명부 삭제: 구성원까지 사라지고, 감사 로그가 남고, 같은 현장·날짜로 다시 만들 수 있다
+    @Test
+    void deleteRemovesRosterAndAllowsRecreate() {
+        SiteForm sf = new SiteForm();
+        sf.setName("삭제후재생성현장-" + SEQ.incrementAndGet());
+        Site site = siteService.create(sf);
+
+        RosterCriteria c = new RosterCriteria();
+        c.setSiteId(site.getId());
+        c.setTargetDate(LocalDate.now());
+        Long workerId = createKorean(false).getId();
+        Roster roster = rosterService.save(RosterType.MANUAL, c, List.of(workerId), "tester");
+        Long rosterId = roster.getId();
+
+        rosterService.delete(rosterId);
+
+        assertTrue(rosterService.members(rosterId).isEmpty(), "구성원 스냅샷도 함께 삭제되어야 함");
+        assertThrows(IllegalArgumentException.class, () -> rosterService.get(rosterId));
+        assertFalse(auditService.history("ROSTER", rosterId).isEmpty(), "삭제 감사 로그가 남아야 함");
+
+        // 같은 현장·날짜로 재생성 가능(중복 차단에 걸리지 않는다)
+        assertEquals(site.getId(),
+                rosterService.save(RosterType.MANUAL, c, List.of(workerId), "tester").getSiteId());
     }
 
     // 명부 이력이 있는 현장은 삭제가 차단된다(F-05)
