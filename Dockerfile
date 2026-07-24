@@ -18,9 +18,15 @@ USER ci
 RUN ./gradlew test --no-daemon
 
 # Stage 3: 런타임 (JRE)
+# ★ 반드시 비root로 실행한다 — 배포가 test 프로필(임베디드 PostgreSQL)로 뜨는데
+#   임베디드 PG의 initdb는 root 실행을 거부해서, root로 두면 기동 즉시 죽는다.
 FROM eclipse-temurin:21-jre AS runtime
 WORKDIR /app
-COPY --from=build /app/build/libs/*.jar app.jar
 ENV TZ=Asia/Seoul
+RUN useradd -m -u 1001 appuser \
+    && mkdir -p /app/data/uploads \
+    && chown -R appuser:appuser /app
+COPY --from=build --chown=appuser:appuser /app/build/libs/*.jar app.jar
+USER appuser
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]
