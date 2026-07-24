@@ -25,7 +25,7 @@ WORKDIR /app
 ENV TZ=Asia/Seoul
 RUN useradd -m -u 1001 appuser \
     && mkdir -p /app/data/uploads \
-    && chown -R appuser:appuser /appP@
+    && chown -R appuser:appuser /app
 COPY --from=build --chown=appuser:appuser /app/build/libs/*.jar app.jar
 USER appuser
 EXPOSE 18084
