@@ -58,11 +58,13 @@
                 <th class="px-3 py-2 font-medium">주소</th>
                 <th class="px-3 py-2 font-medium">공사기간</th>
                 <th class="px-3 py-2 font-medium">상태</th>
-                <th class="px-3 py-2 font-medium text-right">관리</th>
             </tr>
             </thead>
+            <!-- 행 전체가 상세로 이동(data-row-href + row-link.js) -->
             <tbody class="divide-y divide-slate-100">
-            <tr th:each="s : ${sites}" class="hover:bg-slate-50">
+            <tr th:each="s : ${sites}" tabindex="0"
+                th:data-row-href="@{/sites/{id}(id=${s.id})}"
+                class="hover:bg-slate-50 cursor-pointer focus:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-slate-300">
                 <td class="px-3 py-2 font-medium text-slate-800" th:text="${s.name}">현장명</td>
                 <td class="px-3 py-2 text-slate-600" th:text="${s.clientName} ?: '-'">-</td>
                 <td class="px-3 py-2 text-slate-600" th:text="${s.address} ?: '-'">-</td>
@@ -76,16 +78,14 @@
                     <span th:if="${s.active}" class="text-xs px-2 py-0.5 rounded bg-green-50 text-green-600">진행</span>
                     <span th:unless="${s.active}" class="text-xs px-2 py-0.5 rounded bg-slate-100 text-slate-500">종료</span>
                 </td>
-                <td class="px-3 py-2 text-right">
-                    <a th:href="@{/sites/{id}(id=${s.id})}" class="text-slate-600 hover:text-slate-900 underline">상세</a>
-                </td>
             </tr>
             <tr th:if="${sites.isEmpty()}">
-                <td colspan="6" class="px-3 py-10 text-center text-slate-400">현장이 없습니다</td>
+                <td colspan="5" class="px-3 py-10 text-center text-slate-400">현장이 없습니다</td>
             </tr>
             </tbody>
         </table>
     </div>
 </main>
+<script th:src="@{/js/row-link.js}"></script>
 </body>
 </html>
