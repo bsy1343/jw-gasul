@@ -43,7 +43,7 @@
             <tr th:each="m : ${members}">
                 <td class="px-3 py-2 font-medium text-slate-800" th:text="${m.snapNameKo}">이름</td>
                 <td class="px-3 py-2 text-slate-500" th:text="${m.snapNameForeign} ?: '-'">-</td>
-                <td class="px-3 py-2 text-slate-600" th:text="${m.snapPhone}">연락처</td>
+                <td class="px-3 py-2 text-slate-600 whitespace-nowrap tabular-nums" th:text="${m.snapPhoneFormatted}">010-0000-0000</td>
                 <td class="px-3 py-2 text-slate-600" th:text="${m.snapBirthDate}">생년월일</td>
             </tr>
             <tr th:if="${members.isEmpty()}">

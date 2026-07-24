@@ -39,7 +39,7 @@
                         </div>
                         <div class="mt-0.5 text-sm text-slate-500 row-sub">
                             <span th:if="${w.nameForeign}" th:text="${w.nameForeign} + ' · '"></span>
-                            <span th:text="${w.phone}">연락처</span> · <span th:text="${w.birthDate}">생년월일</span>
+                            <span class="tabular-nums" th:text="${w.phoneFormatted}">010-0000-0000</span> · <span th:text="${w.birthDate}">생년월일</span>
                         </div>
                     </div>
                     <div class="shrink-0 flex gap-1 text-xs" th:unless="${w.fixed}">

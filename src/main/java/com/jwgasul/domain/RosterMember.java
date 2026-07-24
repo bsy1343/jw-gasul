@@ -2,6 +2,7 @@
 // 이후 근로자 수정·삭제·재입사와 무관하게 과거 명부는 스냅샷 값으로 일관되게 재출력된다.
 package com.jwgasul.domain;
 
+import com.jwgasul.common.PhoneFormat;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -71,6 +72,11 @@ public class RosterMember {
 
     public String getSnapPhone() {
         return snapPhone;
+    }
+
+    // 화면 표시용 스냅샷 연락처(010-1234-5678). 엑셀 출력은 원본 스냅샷 값을 쓴다.
+    public String getSnapPhoneFormatted() {
+        return PhoneFormat.format(snapPhone);
     }
 
     public LocalDate getSnapBirthDate() {

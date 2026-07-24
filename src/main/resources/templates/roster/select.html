@@ -46,7 +46,7 @@
                     <span th:if="${w.fixed}" class="text-xs px-1.5 py-0.5 rounded bg-amber-50 text-amber-600 ml-1">고정</span>
                     <span class="block text-xs text-slate-500 truncate">
                         <span th:if="${w.nameForeign}" th:text="${w.nameForeign} + ' · '"></span>
-                        <span th:text="${w.phone}">연락처</span> · <span th:text="${w.birthDate}">생년월일</span>
+                        <span class="tabular-nums" th:text="${w.phoneFormatted}">010-0000-0000</span> · <span th:text="${w.birthDate}">생년월일</span>
                     </span>
                 </span>
             </label>

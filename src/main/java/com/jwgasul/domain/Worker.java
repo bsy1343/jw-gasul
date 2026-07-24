@@ -1,6 +1,7 @@
 // Worker.java — 근로자 엔티티(worker 테이블, 3.1). 비자/교육 유효기간·soft delete 포함
 package com.jwgasul.domain;
 
+import com.jwgasul.common.PhoneFormat;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -109,25 +110,9 @@ public class Worker {
         return birthDate == null ? "" : birthDate.format(DateTimeFormatter.BASIC_ISO_DATE);
     }
 
-    // 화면 표시용 연락처(010-1234-5678). 저장값은 숫자만이므로 자릿수에 맞춰 하이픈을 넣는다.
-    // 형식이 예상과 다르면(가공 실패) 원본을 그대로 돌려준다. 교육 링크는 원본 phone을 써야 한다.
+    // 화면 표시용 연락처(010-1234-5678). 교육 링크 등에는 원본 phone(숫자만)을 써야 한다.
     public String getPhoneFormatted() {
-        if (phone == null) {
-            return null;
-        }
-        String digits = phone.replaceAll("\\D", "");
-        if (digits.length() == 11) {                       // 010-1234-5678
-            return digits.replaceFirst("(\\d{3})(\\d{4})(\\d{4})", "$1-$2-$3");
-        }
-        if (digits.length() == 10) {                       // 02-1234-5678 / 031-123-4567
-            return digits.startsWith("02")
-                    ? digits.replaceFirst("(\\d{2})(\\d{4})(\\d{4})", "$1-$2-$3")
-                    : digits.replaceFirst("(\\d{3})(\\d{3})(\\d{4})", "$1-$2-$3");
-        }
-        if (digits.length() == 9 && digits.startsWith("02")) {  // 02-123-4567
-            return digits.replaceFirst("(\\d{2})(\\d{3})(\\d{4})", "$1-$2-$3");
-        }
-        return phone;
+        return PhoneFormat.format(phone);
     }
 
     // soft delete 처리
