@@ -13,6 +13,7 @@ concurrency:
 
 env:
   DOCKER_HOST: unix:///var/run/docker.sock
+  IMAGE_NAME: jw-gasul
 
 jobs:
   build-and-deploy:
@@ -30,15 +31,15 @@ jobs:
 
       - name: Build runtime image
         if: github.event_name == 'push'
-        run: docker build -t jw-gasul .
+        run: docker build -t ${{ env.IMAGE_NAME }} .
 
       - name: Deploy container
         if: github.event_name == 'push'
-        run: docker compose -f /Users/bsy1343/dev/home-server/docker-compose.yml up -d --force-recreate --wait jw-gasul
+        run: docker compose -f /Users/bsy1343/dev/home-server/docker-compose.yml up -d --force-recreate --wait ${{ env.IMAGE_NAME }}
 
       - name: Show logs on failure
         if: failure()
-        run: docker logs --tail 100 jw-gasul || true
+        run: docker logs --tail 100 ${{ env.IMAGE_NAME }} || true
 
       - name: Prune dangling images
         if: always()
