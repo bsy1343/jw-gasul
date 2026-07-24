@@ -18,6 +18,7 @@ import com.jwgasul.dto.WorkerFilter;
 import com.jwgasul.dto.WorkerForm;
 import java.time.LocalDate;
 import com.jwgasul.repository.WorkerAccountRepository;
+import jakarta.persistence.criteria.Predicate;
 import com.jwgasul.repository.WorkerDocumentRepository;
 import com.jwgasul.repository.WorkerRepository;
 import java.io.ByteArrayOutputStream;
@@ -173,13 +174,19 @@ public class WorkerService {
         return (root, query, cb) -> cb.equal(root.get("workerType"), type);
     }
 
-    // 이름(한국/외국) 또는 연락처 부분 일치(대소문자 무시)
+    // 이름(한국/외국) 또는 연락처 부분 일치(대소문자 무시).
+    // 연락처는 숫자만 저장하지만 화면에는 010-1234-5678로 보이므로, 검색어의 하이픈을 제거해 비교한다.
     private Specification<Worker> matchesKeyword(String kw) {
         String like = "%" + kw.toLowerCase() + "%";
-        return (root, query, cb) -> cb.or(
-                cb.like(cb.lower(root.get("nameKo")), like),
-                cb.like(cb.lower(root.get("nameForeign")), like),
-                cb.like(root.get("phone"), "%" + kw + "%"));
+        String digits = kw.replaceAll("\\D", "");
+        return (root, query, cb) -> {
+            Predicate byName = cb.or(
+                    cb.like(cb.lower(root.get("nameKo")), like),
+                    cb.like(cb.lower(root.get("nameForeign")), like));
+            return digits.isEmpty()
+                    ? byName
+                    : cb.or(byName, cb.like(root.get("phone"), "%" + digits + "%"));
+        };
     }
 
     // 삭제되지 않은 단건 조회

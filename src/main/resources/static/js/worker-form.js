@@ -25,8 +25,30 @@
         });
     }
 
+    // 숫자만 남긴 연락처를 010-1234-5678 형태로 조립(입력 중간 단계도 자연스럽게)
+    function formatPhone(value) {
+        var d = value.replace(/\D/g, '').slice(0, 11);
+        if (d.indexOf('02') === 0 && d.length <= 10) {       // 서울 지역번호(02-1234-5678)
+            if (d.length > 6) { return d.slice(0, 2) + '-' + d.slice(2, 6) + '-' + d.slice(6); }
+            if (d.length > 2) { return d.slice(0, 2) + '-' + d.slice(2); }
+            return d;
+        }
+        if (d.length > 7) { return d.slice(0, 3) + '-' + d.slice(3, 7) + '-' + d.slice(7); }
+        if (d.length > 3) { return d.slice(0, 3) + '-' + d.slice(3); }
+        return d;
+    }
+
+    // 연락처 자동 하이픈. 저장 시 서버가 숫자만 남기므로(normalizePhone) 하이픈은 표시용이다.
+    function bindPhoneAutoFormat(input) {
+        input.value = formatPhone(input.value);   // 기존 저장값(숫자만)도 열자마자 포맷
+        input.addEventListener('input', function () {
+            input.value = formatPhone(input.value);
+        });
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         document.querySelectorAll('input[data-date-input]').forEach(bindDateAutoFormat);
+        document.querySelectorAll('input[data-phone-input]').forEach(bindPhoneAutoFormat);
 
         var radios = document.querySelectorAll('input[name="workerType"]');
         if (radios.length === 0) {

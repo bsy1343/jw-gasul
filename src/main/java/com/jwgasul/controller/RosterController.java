@@ -63,7 +63,7 @@ public class RosterController {
         return "roster/detail";
     }
 
-    // 엑셀 다운로드(F-08): mode A 기본 / B 사진 / C 계좌. 파일명 명부_{현장}_{yyyyMMdd}.xlsx
+    // 엑셀 다운로드(F-08): mode A 기본 / B 사진 / C 계좌. 파일명 재원가설_{현장}_{yyyyMMdd}.xlsx
     @GetMapping("/roster/{id}/excel")
     public ResponseEntity<byte[]> excel(@PathVariable Long id,
                                         @RequestParam(name = "mode", defaultValue = "A") String mode) {
@@ -71,7 +71,7 @@ public class RosterController {
         byte[] bytes = rosterService.exportExcel(id, mode);
         String date = roster.getTargetDate().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         String safeTitle = roster.getTitle().replaceAll("[\\\\/:*?\"<>|]", "_");
-        String filename = "명부_" + safeTitle + "_" + date + ".xlsx";
+        String filename = "재원가설_" + safeTitle + "_" + date + ".xlsx";
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
                 .header(HttpHeaders.CONTENT_DISPOSITION,
