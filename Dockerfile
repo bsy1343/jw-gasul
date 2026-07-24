@@ -3,6 +3,7 @@
 # Deploy: docker build -t jw-gasul . && docker run -d jw-gasul
 
 # Stage 1: 빌드 (실행 가능 jar 생성, 테스트는 ci 스테이지에서)
+FROM eclipse-temurin:21-jdk AS build
 WORKDIR /app
 COPY gradlew settings.gradle.kts build.gradle.kts ./
 COPY gradle gradle

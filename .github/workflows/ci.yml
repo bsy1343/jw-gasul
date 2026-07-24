@@ -1,4 +1,4 @@
-# CI — push/PR 시 Docker 안에서 빌드 + 테스트
+# CI — 모든 브랜치 push 시 Docker 내부에서 빌드 + 테스트
 name: CI
 
 on:
@@ -6,12 +6,6 @@ on:
     branches: ['**']
   pull_request:
     branches: [main]
-  workflow_dispatch: {}   # 수동 실행(러너/CI 헬스 테스트용)
-
-# 같은 ref의 이전 실행은 취소 → 단일 self-hosted 러너 적체(pile-up) 방지
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
 
 env:
   DOCKER_HOST: unix:///var/run/docker.sock
@@ -21,7 +15,6 @@ env:
 jobs:
   build-and-test:
     runs-on: self-hosted
-    timeout-minutes: 25            # 잡 전체 상한 — 행 걸려도 러너 무한 점유 방지
     steps:
       - uses: actions/checkout@v4
 
@@ -29,8 +22,7 @@ jobs:
         run: mkdir -p "$DOCKER_CONFIG" && echo '{}' > "$DOCKER_CONFIG/config.json"
 
       - name: Build and Test
-        timeout-minutes: 18        # docker build 단계 상한 — 행 시 이 스텝만 자동 취소
         run: docker build --target ci .
-      # 주의: `docker image prune -f`는 레거시 빌더에서 빌드 캐시(dangling 이미지)를 통째로 지워
-      #   매 실행을 콜드로 만들고, 이미지가 쌓이면 멈추기까지 한다. 그래서 매 실행 정리는 하지 않는다.
-      #   디스크 정리는 별도(수동 `docker system prune -af` 또는 주기 배치)로 수행한다.
+
+      - name: Prune dangling images
+        run: docker image prune -f
