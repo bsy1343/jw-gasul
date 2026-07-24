@@ -100,9 +100,12 @@ com.jwgasul
 - **Spring Boot 4.1 / Framework 7 / Security 7 기준. 3.x 문법 금지.**
   - Security: **람다 DSL만**. 스타터명 다름: `spring-boot-starter-webmvc`(≠`-web`)·`-flyway`·모듈별 `-test`.
   - **test-autoconfigure 패키지 이동**: `@AutoConfigureMockMvc` = `org.springframework.boot.webmvc.test.autoconfigure.*`.
+  - **MIME 매핑 API 이동**: 3.x의 `ConfigurableWebServerFactory.setMimeMappings` 없음 → `org.springframework.boot.web.server.servlet.ConfigurableServletWebServerFactory`의 **`addMimeMappings`**(기본 매핑 보존). `WebMimeConfig` 참고.
 - **Security 설정 클래스(`SecurityConfig`)는 변경 시 사람이 검토**(PRD 지침).
 - **임베디드 PG(Zonky)** — 테스트도 Docker 불필요. PG 바이너리는 `runtimeOnly`(모든 실행 방식에서 잡히게; `developmentOnly`는 IDE main() 실행 누락). **`darwin-arm64v8` + `linux-arm64v8`**(로컬 mac + Docker CI 리눅스). prod 프로필 미로드라 운영 무영향.
 - **Apache POI 버전 수동 관리**(Boot BOM 미관리). `poi-ooxml:5.3.0`.
+- **앱 아이콘**: 원본은 `static/images/favicon.svg`(비계 프레임 모티프, slate-800 + teal-400). PNG/ICO는 **`scripts/gen-icon.py`가 생성**(외부 라이브러리 없이 SDF 렌더링 → 16/32/48 ICO + 180/192/512 PNG). 색·형태를 바꾸면 **SVG와 스크립트 상수를 같이 고치고 재생성**한다: `python3 scripts/gen-icon.py src/main/resources/static/images && mv -f .../images/favicon.ico .../static/favicon.ico`. 16px 이하는 대각 가새를 뺀 단순화 기하(`SEGMENTS_SMALL`)로 그린다.
+- **홈 화면 추가(PWA-lite)**: `static/images/site.webmanifest` + `apple-touch-icon`(180px) + `theme-color`. 아이콘/매니페스트는 `/images/**`·`/favicon.ico`라 `SecurityConfig` 수정 없이 비인증 접근 가능(로그인 화면에서도 아이콘 표시).
 - 계좌번호·신분증은 민감정보. 화면 마스킹 + 접근 감사 로그(F-12) 우회 금지. 계좌 전체 노출·계좌 포함 엑셀 반출은 반드시 `audit_log`에 기록.
 
 ## Operational Decisions

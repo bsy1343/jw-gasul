@@ -1,0 +1,7 @@
+<!-- favicon.svg — 재원가설 인원관리 앱 아이콘(벡터). 비계 프레임(기둥2·발판2·대각가새1) 모티프.
+     색상은 네비 배경(slate-800)과 대시보드 강조색(teal-400)에 맞춘다. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <rect width="64" height="64" rx="14" fill="#1e293b"/>
+  <path d="M20 12V52M44 12V52M13 24H51M13 42H51M20 42L44 24"
+        stroke="#2dd4bf" stroke-width="5" stroke-linecap="round"/>
+</svg>

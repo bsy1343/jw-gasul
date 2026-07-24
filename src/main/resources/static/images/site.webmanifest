@@ -1,0 +1,17 @@
+{
+  "name": "재원가설 인원관리",
+  "short_name": "재원가설",
+  "description": "비계 시공 근로자 인적사항·명부 관리",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f8fafc",
+  "theme_color": "#1e293b",
+  "lang": "ko",
+  "icons": [
+    { "src": "/images/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/images/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/images/favicon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

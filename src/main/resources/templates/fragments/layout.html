@@ -5,6 +5,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title th:text="${title}">재원가설 인원관리</title>
+    <!-- 앱 아이콘: SVG 우선(고해상도), ico는 구형 브라우저 폴백, 180px는 iOS 홈 화면 추가용 -->
+    <link rel="icon" type="image/svg+xml" th:href="@{/images/favicon.svg}">
+    <link rel="icon" sizes="32x32" th:href="@{/favicon.ico}">
+    <link rel="apple-touch-icon" th:href="@{/images/icon-180.png}">
+    <link rel="manifest" th:href="@{/images/site.webmanifest}">
+    <!-- 모바일 주소창/상태바 색상을 네비 배경과 맞춘다 -->
+    <meta name="theme-color" content="#1e293b">
+    <meta name="apple-mobile-web-app-title" content="재원가설">
     <!-- Tailwind 4 브라우저 CDN. Docker 빌드에서 CSS 컴파일/다운로드 없음 → 콜드 빌드 경량. -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 </head>
